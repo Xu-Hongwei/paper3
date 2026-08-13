@@ -228,7 +228,7 @@ def main():
         num_workers=0,
     )
 
-    images, captions = next(
+    images, captions, image_ids = next(
         iter(loader)
     )
 
@@ -236,10 +236,19 @@ def main():
         device
     )
 
+    image_ids = image_ids.to(
+        device
+    )
+
     print()
     print(
         "Image batch shape:",
         tuple(images.shape)
+    )
+
+    print(
+        "Image ids:",
+        image_ids.detach().cpu().tolist()
     )
 
     print("Captions:")
@@ -274,6 +283,7 @@ def main():
             outputs["image_feat"],
             outputs["text_feat"],
             outputs["logit_scale"],
+            image_ids,
         )
 
     initial_loss = float(
@@ -345,6 +355,7 @@ def main():
             outputs["image_feat"],
             outputs["text_feat"],
             outputs["logit_scale"],
+            image_ids,
         )
 
         loss = losses["loss"]
@@ -388,6 +399,7 @@ def main():
             outputs["image_feat"],
             outputs["text_feat"],
             outputs["logit_scale"],
+            image_ids,
         )
 
     final_loss = float(

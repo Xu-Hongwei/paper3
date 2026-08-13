@@ -5,13 +5,20 @@ import torch.nn.functional as F
 
 class CLIPLoss(nn.Module):
     """
-    Standard symmetric CLIP contrastive loss.
+    Multi-positive symmetric CLIP contrastive loss.
 
-    Assumption:
-        The positive image-text pairs are located on the
-        diagonal of the batch similarity matrix.
+    Samples sharing the same image_id are treated as
+    positives rather than negatives.
 
-        image_i <-> text_i
+    For multiple positives, their log-probabilities are
+    averaged equally.
+
+    Example:
+        image_ids = [0, 0, 1, 1]
+
+        means:
+            image_0 <-> text_0, text_1
+            image_1 <-> text_2, text_3
     """
 
     def __init__(self):
@@ -22,6 +29,7 @@ class CLIPLoss(nn.Module):
         image_features,
         text_features,
         logit_scale,
+        image_ids,
     ):
         """
         Args:
@@ -34,13 +42,30 @@ class CLIPLoss(nn.Module):
             logit_scale:
                 Positive scalar, normally exp(CLIP.logit_scale).
 
+            image_ids:
+                Tensor [B].
+
+                Samples with the same image_id are regarded
+                as positive image-text pairs.
+
+                Example:
+                    [0, 0, 0, 0, 0,
+                     1, 1, 1, 1, 1]
+
+                means each image has 5 captions.
+
         Returns:
             dict:
                 loss
                 loss_i2t
                 loss_t2i
                 logits_i2t
+                positive_mask
         """
+
+        # -------------------------------------------------
+        # Input checks
+        # -------------------------------------------------
 
         if image_features.ndim != 2:
             raise ValueError(
@@ -62,11 +87,25 @@ class CLIPLoss(nn.Module):
 
         batch_size = image_features.shape[0]
 
-        # ---------------------------------------------
+        if image_ids.ndim != 1:
+            raise ValueError(
+                "image_ids must have shape [B]"
+            )
+
+        if image_ids.shape[0] != batch_size:
+            raise ValueError(
+                "image_ids must have the same batch size "
+                f"as features. Got {image_ids.shape[0]} "
+                f"and {batch_size}"
+            )
+
+        image_ids = image_ids.to(image_features.device)
+
+        # -------------------------------------------------
         # Similarity matrix
         #
         # [B, D] @ [D, B] -> [B, B]
-        # ---------------------------------------------
+        # -------------------------------------------------
 
         logits_i2t = (
             logit_scale
@@ -76,40 +115,89 @@ class CLIPLoss(nn.Module):
 
         logits_t2i = logits_i2t.t()
 
-        # ---------------------------------------------
-        # Diagonal positives:
+        # -------------------------------------------------
+        # Multi-positive mask
         #
-        # image 0 <-> text 0
-        # image 1 <-> text 1
-        # ...
-        # ---------------------------------------------
+        # positive_mask[i, j] = 1
+        # if sample i and sample j belong to the same image
+        #
+        # Example:
+        #
+        # image_ids = [0, 0, 1, 1]
+        #
+        # mask =
+        #
+        # 1 1 0 0
+        # 1 1 0 0
+        # 0 0 1 1
+        # 0 0 1 1
+        # -------------------------------------------------
 
-        labels = torch.arange(
-            batch_size,
-            device=image_features.device,
+        positive_mask = (
+            image_ids[:, None]
+            == image_ids[None, :]
+        ).float()
+
+        # -------------------------------------------------
+        # Normalize positives
+        #
+        # Example:
+        #
+        # 1 1 0 0
+        #
+        # becomes
+        #
+        # 0.5 0.5 0 0
+        #
+        # Therefore each positive contributes equally.
+        # -------------------------------------------------
+
+        positive_targets = (
+            positive_mask
+            /
+            positive_mask.sum(
+                dim=1,
+                keepdim=True,
+            ).clamp_min(1.0)
         )
 
-        # ---------------------------------------------
+        # -------------------------------------------------
         # Image -> Text
-        # ---------------------------------------------
+        #
+        # log_softmax over all candidate texts
+        # then average over all positives
+        # -------------------------------------------------
 
-        loss_i2t = F.cross_entropy(
+        log_prob_i2t = F.log_softmax(
             logits_i2t,
-            labels,
+            dim=1,
         )
 
-        # ---------------------------------------------
+        loss_i2t = -(
+            positive_targets
+            * log_prob_i2t
+        ).sum(dim=1).mean()
+
+        # -------------------------------------------------
         # Text -> Image
-        # ---------------------------------------------
+        #
+        # Since the positive relationship is symmetric,
+        # transpose the target matrix.
+        # -------------------------------------------------
 
-        loss_t2i = F.cross_entropy(
+        log_prob_t2i = F.log_softmax(
             logits_t2i,
-            labels,
+            dim=1,
         )
 
-        # ---------------------------------------------
+        loss_t2i = -(
+            positive_targets.t()
+            * log_prob_t2i
+        ).sum(dim=1).mean()
+
+        # -------------------------------------------------
         # Symmetric CLIP loss
-        # ---------------------------------------------
+        # -------------------------------------------------
 
         loss = (
             loss_i2t
@@ -122,4 +210,5 @@ class CLIPLoss(nn.Module):
             "loss_i2t": loss_i2t,
             "loss_t2i": loss_t2i,
             "logits_i2t": logits_i2t,
+            "positive_mask": positive_mask,
         }

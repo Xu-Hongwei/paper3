@@ -1,4 +1,5 @@
 import argparse
+from collections import Counter
 from pathlib import Path
 import sys
 
@@ -53,10 +54,18 @@ def inspect_train_dataset(config, batch_size):
 
     print(f"Number of image-caption pairs: {len(train_dataset)}")
 
-    image, caption = train_dataset[0]
+    counts = Counter(
+        train_dataset.image_ids
+    )
+
+    print(f"Number of unique images       : {train_dataset.num_images}")
+    print(f"Captions per image distribution: {Counter(counts.values())}")
+
+    image, caption, image_id = train_dataset[0]
 
     print(f"Single image shape: {tuple(image.shape)}")
     print(f"Single caption: {caption}")
+    print(f"Single image id: {image_id}")
 
     loader = create_loader(
         train_dataset,
@@ -66,10 +75,11 @@ def inspect_train_dataset(config, batch_size):
         pin_memory=False,
     )
 
-    images, captions = next(iter(loader))
+    images, captions, image_ids = next(iter(loader))
 
     print(f"Batch image shape: {tuple(images.shape)}")
     print(f"Batch size: {len(captions)}")
+    print(f"Batch image ids: {image_ids.tolist()}")
     print("First batch captions:")
 
     for idx, text in enumerate(captions):

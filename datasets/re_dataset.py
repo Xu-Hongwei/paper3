@@ -22,14 +22,17 @@ def resolve_image_path(image_root: str, image_reference: str) -> str:
 
     This is useful for RSICD/RSITMD variants with different folder layouts.
     """
-    image_path = os.path.join(image_root, image_reference)
+    image_path = os.path.join(
+        image_root,
+        image_reference,
+    )
 
     if os.path.isfile(image_path):
         return image_path
 
     flat_path = os.path.join(
         image_root,
-        os.path.basename(image_reference)
+        os.path.basename(image_reference),
     )
 
     if os.path.isfile(flat_path):
@@ -54,7 +57,25 @@ class re_train_dataset(Dataset):
         ...
     ]
 
-    `ann_file` should be a list of JSON files.
+    Different captions belonging to the same image share
+    the same image_id.
+
+    Example:
+        [
+            {"image": "a.jpg", "caption": "caption 1"},
+            {"image": "a.jpg", "caption": "caption 2"},
+            {"image": "b.jpg", "caption": "caption 1"}
+        ]
+
+    will produce:
+
+        image_id:
+            a.jpg -> 0
+            a.jpg -> 0
+            b.jpg -> 1
+
+    `ann_file` can be either a JSON path or a list
+    of JSON paths.
     """
 
     def __init__(
@@ -71,13 +92,22 @@ class re_train_dataset(Dataset):
 
         self.ann = []
 
+        # --------------------------------------------------
+        # Load annotations
+        # --------------------------------------------------
+
         for file_path in ann_file:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(
+                file_path,
+                "r",
+                encoding="utf-8",
+            ) as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
                 raise ValueError(
-                    f"Training annotation must be a list: {file_path}"
+                    f"Training annotation must be a list: "
+                    f"{file_path}"
                 )
 
             self.ann.extend(data)
@@ -85,6 +115,41 @@ class re_train_dataset(Dataset):
         self.transform = transform
         self.image_root = image_root
         self.max_words = max_words
+
+        # --------------------------------------------------
+        # Build image identity mapping.
+        #
+        # All captions referring to the same image receive
+        # the same image_id.
+        #
+        # This is used by the multi-positive CLIP loss to
+        # prevent valid positive captions from being treated
+        # as negatives.
+        # --------------------------------------------------
+
+        self.image_ids = []
+
+        image_to_id = {}
+
+        for ann_index, ann in enumerate(self.ann):
+
+            if "image" not in ann:
+                raise KeyError(
+                    f"Missing key 'image' in training "
+                    f"annotation index {ann_index}"
+                )
+
+            image_key = ann["image"]
+
+            if image_key not in image_to_id:
+                image_to_id[image_key] = len(image_to_id)
+
+            self.image_ids.append(
+                image_to_id[image_key]
+            )
+
+        # Number of unique training images.
+        self.num_images = len(image_to_id)
 
     def __len__(self):
         return len(self.ann)
@@ -94,30 +159,51 @@ class re_train_dataset(Dataset):
 
         if "image" not in ann:
             raise KeyError(
-                f"Missing key 'image' in training annotation index {index}"
+                f"Missing key 'image' in training "
+                f"annotation index {index}"
             )
 
         if "caption" not in ann:
             raise KeyError(
-                f"Missing key 'caption' in training annotation index {index}"
+                f"Missing key 'caption' in training "
+                f"annotation index {index}"
             )
+
+        # --------------------------------------------------
+        # Image
+        # --------------------------------------------------
 
         image_path = resolve_image_path(
             self.image_root,
-            ann["image"]
+            ann["image"],
         )
 
-        image = Image.open(image_path).convert("RGB")
+        image = Image.open(
+            image_path
+        ).convert("RGB")
 
         if self.transform is not None:
             image = self.transform(image)
 
+        # --------------------------------------------------
+        # Caption
+        # --------------------------------------------------
+
         caption = pre_caption(
             ann["caption"],
-            self.max_words
+            self.max_words,
         )
 
-        return image, caption
+        # --------------------------------------------------
+        # Image identity
+        #
+        # Different captions of the same image share
+        # the same image_id.
+        # --------------------------------------------------
+
+        image_id = self.image_ids[index]
+
+        return image, caption, image_id
 
 
 class re_eval_dataset(Dataset):
@@ -155,12 +241,17 @@ class re_eval_dataset(Dataset):
     ):
         super().__init__()
 
-        with open(ann_file, "r", encoding="utf-8") as f:
+        with open(
+            ann_file,
+            "r",
+            encoding="utf-8",
+        ) as f:
             self.ann = json.load(f)
 
         if not isinstance(self.ann, list):
             raise ValueError(
-                f"Evaluation annotation must be a list: {ann_file}"
+                f"Evaluation annotation must be a list: "
+                f"{ann_file}"
             )
 
         self.transform = transform
@@ -175,36 +266,58 @@ class re_eval_dataset(Dataset):
 
         txt_id = 0
 
+        # --------------------------------------------------
+        # Build retrieval mappings
+        # --------------------------------------------------
+
         for img_id, ann in enumerate(self.ann):
+
             if "image" not in ann:
                 raise KeyError(
-                    f"Missing key 'image' in evaluation annotation index {img_id}"
+                    f"Missing key 'image' in evaluation "
+                    f"annotation index {img_id}"
                 )
 
             if "caption" not in ann:
                 raise KeyError(
-                    f"Missing key 'caption' in evaluation annotation index {img_id}"
+                    f"Missing key 'caption' in evaluation "
+                    f"annotation index {img_id}"
                 )
 
             captions = ann["caption"]
 
             if not isinstance(captions, list):
                 raise ValueError(
-                    f"'caption' must be a list for evaluation sample {img_id}"
+                    f"'caption' must be a list for "
+                    f"evaluation sample {img_id}"
                 )
 
-            self.image.append(ann["image"])
+            self.image.append(
+                ann["image"]
+            )
+
             self.img2txt[img_id] = []
 
             for caption in captions:
+
                 clean_caption = pre_caption(
                     caption,
-                    self.max_words
+                    self.max_words,
                 )
 
-                self.text.append(clean_caption)
-                self.img2txt[img_id].append(txt_id)
-                self.txt2img[txt_id] = img_id
+                self.text.append(
+                    clean_caption
+                )
+
+                self.img2txt[
+                    img_id
+                ].append(
+                    txt_id
+                )
+
+                self.txt2img[
+                    txt_id
+                ] = img_id
 
                 txt_id += 1
 
@@ -213,12 +326,15 @@ class re_eval_dataset(Dataset):
         return len(self.image)
 
     def __getitem__(self, index):
+
         image_path = resolve_image_path(
             self.image_root,
-            self.ann[index]["image"]
+            self.ann[index]["image"],
         )
 
-        image = Image.open(image_path).convert("RGB")
+        image = Image.open(
+            image_path
+        ).convert("RGB")
 
         if self.transform is not None:
             image = self.transform(image)

@@ -41,10 +41,6 @@ def build_optimizer(
         if not param.requires_grad:
             continue
 
-        # 1-D parameters:
-        # bias, LayerNorm scale, logit_scale, etc.
-        #
-        # Also respect OpenCLIP's explicit exclusions.
         if (
             param.ndim <= 1
             or name in no_weight_decay_names
@@ -85,38 +81,13 @@ def train_one_epoch(
     """
     Train CLIP for one epoch or a limited number of steps.
 
-    Args:
-        model:
-            CLIPRetrieval model.
+    The training dataset is expected to return:
 
-        data_loader:
-            Training DataLoader.
+        image, caption, image_id
 
-        criterion:
-            CLIPLoss.
-
-        optimizer:
-            AdamW optimizer.
-
-        device:
-            cuda / cpu.
-
-        epoch:
-            Current epoch index.
-
-        max_steps:
-            None -> use whole epoch.
-            int  -> stop after this many steps.
-
-        log_interval:
-            Print statistics every N steps.
-
-        scheduler:
-            Learning-rate scheduler.
-            If None, learning rate is kept unchanged.
-
-    Returns:
-        stats dictionary.
+    image_id is used by the multi-positive CLIP loss
+    to identify captions/images belonging to the same
+    underlying image.
     """
 
     model.train()
@@ -131,9 +102,11 @@ def train_one_epoch(
     # Training loop
     # ==================================================
 
-    for step, (images, captions) in enumerate(
-        data_loader
-    ):
+    for step, (
+        images,
+        captions,
+        image_ids,
+    ) in enumerate(data_loader):
 
         # ------------------------------------------
         # Optional early stop for smoke test
@@ -146,13 +119,18 @@ def train_one_epoch(
             break
 
         # ------------------------------------------
-        # Move image batch to device
+        # Move tensors to device
         #
         # captions remain list[str].
         # Tokenization is handled inside CLIPBackbone.
         # ------------------------------------------
 
         images = images.to(
+            device,
+            non_blocking=True,
+        )
+
+        image_ids = image_ids.to(
             device,
             non_blocking=True,
         )
@@ -166,10 +144,18 @@ def train_one_epoch(
             captions,
         )
 
+        # ==========================================
+        # Multi-positive CLIP loss
+        #
+        # image_ids are used to determine which
+        # image-text pairs in the batch are positives.
+        # ==========================================
+
         losses = criterion(
             outputs["image_feat"],
             outputs["text_feat"],
             outputs["logit_scale"],
+            image_ids,
         )
 
         loss = losses["loss"]
@@ -200,14 +186,6 @@ def train_one_epoch(
 
         # ==========================================
         # Learning-rate scheduler
-        #
-        # We use step-based scheduling:
-        #
-        # optimizer.step()
-        #       ↓
-        # scheduler.step()
-        #
-        # once for every training batch.
         # ==========================================
 
         if scheduler is not None:
@@ -215,22 +193,6 @@ def train_one_epoch(
 
         # ==========================================
         # CLIP logit-scale constraint
-        #
-        # CLIP stores:
-        #
-        #     raw parameter = log(scale)
-        #
-        # therefore:
-        #
-        #     scale = exp(logit_scale)
-        #
-        # Clamp raw value to:
-        #
-        #     0 <= logit_scale <= ln(100)
-        #
-        # which means:
-        #
-        #     1 <= scale <= 100
         # ==========================================
 
         with torch.no_grad():

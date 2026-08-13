@@ -1,0 +1,94 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Training outputs and checkpoints
+outputs/
+checkpoints/
+resume_logs/
+resume_runs/
+launch_logs/
+runs/
+wandb/
+mlruns/
+tensorboard/
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.onnx
+
+# Temporary diagnostics and scratch files
+tmp/
+temp/
+*.tmp
+
+# External reference repositories
+external/
+
+# Large dataset payloads
+# Keep lightweight annotation JSON under data/, but do not upload raw images.
+data/**/images/
+data/**/image/
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.png
+data/**/*.tif
+data/**/*.tiff
+data/**/*.bmp
+data/**/*.zip
+data/**/*.tar
+data/**/*.tar.gz
+data/**/*.rar
+data/**/*.7z
+
+# Local dataset copies outside annotation JSON
+raw_data/
+dataset/
+data_*/
+
+# Generated arrays, tables, and archives
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.csv
+*.tsv
+*.xlsx
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/

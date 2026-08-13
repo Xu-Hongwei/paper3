@@ -1,0 +1,30 @@
+experiment:
+  name: clip_rsitmd_baseline
+
+dataset:
+  name: rsitmd
+  root: ./data/rsitmd
+
+model:
+  name: clip
+  backbone: ViT-B-32-quickgelu
+  pretrained: openai
+
+training:
+  epochs: 20
+  batch_size: 64
+  num_workers: 8
+
+optimizer:
+  name: adamw
+  lr: 1.0e-5
+  weight_decay: 0.01
+
+scheduler:
+  name: cosine
+  warmup_ratio: 1
+
+seed: 42
+
+output:
+  root: ./outputs

@@ -1,0 +1,43 @@
+experiment:
+  name: clip_rsicd_fullft_30ep
+
+dataset:
+  name: rsicd
+
+  image_root: E:/datasets/remote_sensing_captioning/RSICD/images
+
+  train_file:
+    - E:/paper3/data/rsicd/rsicd_train.json
+
+  val_file: E:/paper3/data/rsicd/rsicd_val.json
+  test_file: E:/paper3/data/rsicd/rsicd_test.json
+
+  image_res: 224
+  max_words: 30
+
+model:
+  name: clip
+  backbone: ViT-B-32-quickgelu
+  pretrained: openai
+
+training:
+  epochs: 30
+  batch_size: 64
+  eval_batch_size: 128
+  text_batch_size: 256
+  num_workers: 8
+  eval_every: 1
+
+optimizer:
+  name: adamw
+  lr: 1.0e-5
+  weight_decay: 0.01
+
+scheduler:
+  name: linear
+  warmup_ratio: 0.05
+
+seed: 42
+
+output:
+  root: ./outputs

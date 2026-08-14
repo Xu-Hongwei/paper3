@@ -436,6 +436,18 @@ def main():
 
     best_epoch = -1
 
+    early_stop_patience = config["training"].get(
+        "early_stop_patience",
+        None,
+    )
+
+    early_stop_min_delta = config["training"].get(
+        "early_stop_min_delta",
+        0.0,
+    )
+
+    epochs_without_improvement = 0
+
     # ==================================================
     # 14. Main training loop
     # ==================================================
@@ -690,20 +702,14 @@ def main():
         # can record whether this epoch is best.
         # ==============================================
 
-        is_best = (
-            current_mr
-            >
-            best_mr
-        )
+        is_best = current_mr > (best_mr + early_stop_min_delta)
 
         if is_best:
-            best_mr = (
-                current_mr
-            )
-
-            best_epoch = (
-                epoch
-            )
+            best_mr = current_mr
+            best_epoch = epoch
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
 
         # ==============================================
         # Save structured epoch log
@@ -897,6 +903,20 @@ def main():
                 f"Saved : "
                 f"{best_path}"
             )
+
+
+        if (
+            early_stop_patience is not None
+            and epochs_without_improvement >= early_stop_patience
+        ):
+            print()
+            print("=" * 70)
+            print("EARLY STOPPING")
+            print("=" * 70)
+            print(f"No improvement for {epochs_without_improvement} validation rounds.")
+            print(f"Best epoch: {best_epoch}")
+            print(f"Best Val mR: {best_mr:.2f}")
+            break
 
         # ==============================================
         # Best so far

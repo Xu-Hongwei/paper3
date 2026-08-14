@@ -1,5 +1,5 @@
 experiment:
-  name: clip_rsicd_fullft_30ep
+  name: clip_rsicd_fullft_mult_60ep
 
 dataset:
   name: rsicd
@@ -21,12 +21,14 @@ model:
   pretrained: openai
 
 training:
-  epochs: 30
+  epochs: 60
   batch_size: 64
   eval_batch_size: 128
   text_batch_size: 256
   num_workers: 8
   eval_every: 1
+  early_stop_patience: null
+  early_stop_min_delta: 0.0
 
 optimizer:
   name: adamw

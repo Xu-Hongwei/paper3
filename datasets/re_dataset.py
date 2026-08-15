@@ -116,6 +116,35 @@ class re_train_dataset(Dataset):
         self.image_root = image_root
         self.max_words = max_words
 
+        valid_ann = []
+
+        for ann_index, ann in enumerate(self.ann):
+
+            if "caption" not in ann:
+                raise KeyError(
+                    f"Missing key 'caption' in training "
+                    f"annotation index {ann_index}"
+                )
+
+            try:
+                clean_caption = pre_caption(
+                    ann["caption"],
+                    self.max_words,
+                )
+            except ValueError:
+                continue
+
+            valid_item = dict(ann)
+            valid_item["caption"] = clean_caption
+            valid_ann.append(valid_item)
+
+        if not valid_ann:
+            raise ValueError(
+                "Training annotation has no valid captions"
+            )
+
+        self.ann = valid_ann
+
         # --------------------------------------------------
         # Build image identity mapping.
         #
@@ -189,10 +218,7 @@ class re_train_dataset(Dataset):
         # Caption
         # --------------------------------------------------
 
-        caption = pre_caption(
-            ann["caption"],
-            self.max_words,
-        )
+        caption = ann["caption"]
 
         # --------------------------------------------------
         # Image identity
@@ -298,12 +324,17 @@ class re_eval_dataset(Dataset):
 
             self.img2txt[img_id] = []
 
+            valid_caption_count = 0
+
             for caption in captions:
 
-                clean_caption = pre_caption(
-                    caption,
-                    self.max_words,
-                )
+                try:
+                    clean_caption = pre_caption(
+                        caption,
+                        self.max_words,
+                    )
+                except ValueError:
+                    continue
 
                 self.text.append(
                     clean_caption
@@ -320,6 +351,13 @@ class re_eval_dataset(Dataset):
                 ] = img_id
 
                 txt_id += 1
+                valid_caption_count += 1
+
+            if valid_caption_count == 0:
+                raise ValueError(
+                    f"Evaluation sample {img_id} has no "
+                    "valid captions after preprocessing"
+                )
 
     def __len__(self):
         # Evaluation loader iterates unique images.

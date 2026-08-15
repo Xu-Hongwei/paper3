@@ -4,8 +4,9 @@ import os
 import random
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+from .cache import StructuredSemanticsCache
 from .llm_client import LLMClient
 from .sanitizer import sanitize_structured_semantics
 from .validator import validate_structured_semantics
@@ -26,14 +27,12 @@ SANITIZER_VERSION = "v1"
 
 def normalize_caption(text: str) -> str:
     """
-    Normalize caption only for duplicate detection.
+    Lightweight normalization used for exact caption
+    deduplication and cache lookup.
 
-    IMPORTANT:
-    The original caption is still sent to the LLM.
-
-    We intentionally keep this normalization lightweight:
-    - lowercase
+    Operations:
     - strip
+    - lowercase
     - collapse whitespace
 
     No semantic rewriting is performed.
@@ -56,14 +55,11 @@ def load_dataset(
     Load dataset annotation JSON.
 
     Expected top-level format:
+
         [
             {...},
             {...}
         ]
-
-    Supported caption fields:
-        caption
-        text
     """
 
     path = Path(input_path)
@@ -95,7 +91,7 @@ def get_caption(
     sample: Dict[str, Any],
 ) -> str:
     """
-    Extract caption text from one dataset sample.
+    Read caption field from one sample.
     """
 
     caption = sample.get("caption")
@@ -116,28 +112,40 @@ def get_caption(
 
 
 # ============================================================
-# Unique caption pool
+# Exact caption deduplication
 # ============================================================
 
 def build_unique_caption_pool(
     dataset: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    Deduplicate captions before API calls.
+    Build a pool of normalized exact-unique captions.
 
-    Each unique normalized caption keeps the metadata from the
-    first occurrence.
+    Every unique caption stores ALL original source indices.
 
-    This is ONLY API-call deduplication.
+    Example:
 
-    It does NOT modify the original training dataset.
+        index 10 -> caption A
+        index 20 -> caption A
+        index 30 -> caption A
+
+    becomes:
+
+        {
+            "caption": caption A,
+            "_source_indices": [10, 20, 30]
+        }
+
+    This allows one LLM request to later map back to all
+    original image-caption pairs.
+
+    No semantic deduplication is performed.
     """
 
-    seen = set()
-
-    unique_samples: List[
-        Dict[str, Any]
-    ] = []
+    unique_map: Dict[
+        str,
+        Dict[str, Any],
+    ] = {}
 
     for source_index, sample in enumerate(
         dataset
@@ -155,37 +163,129 @@ def build_unique_caption_pool(
             caption
         )
 
-        if normalized in seen:
-            continue
+        # ====================================================
+        # First occurrence
+        # ====================================================
 
-        seen.add(normalized)
+        if normalized not in unique_map:
 
-        unique_samples.append(
-            {
-                "_source_index": source_index,
+            unique_map[normalized] = {
+                "_source_indices": [
+                    source_index
+                ],
+
                 "_normalized_caption": (
                     normalized
                 ),
 
+                # Preserve original form from first occurrence.
                 "caption": caption,
 
-                # Preserve useful metadata.
+                # Metadata from first occurrence only.
                 "image_id": sample.get(
                     "image_id"
                 ),
+
                 "image": sample.get(
                     "image"
                 ),
+
                 "label_name": sample.get(
                     "label_name"
                 ),
+
                 "label": sample.get(
                     "label"
                 ),
             }
-        )
 
-    return unique_samples
+        # ====================================================
+        # Duplicate occurrence
+        # ====================================================
+
+        else:
+
+            unique_map[
+                normalized
+            ][
+                "_source_indices"
+            ].append(
+                source_index
+            )
+
+    return list(
+        unique_map.values()
+    )
+
+
+# ============================================================
+# Mapping statistics
+# ============================================================
+
+def get_mapping_statistics(
+    dataset: List[Dict[str, Any]],
+    unique_samples: List[Dict[str, Any]],
+) -> Dict[str, int]:
+    """
+    Verify that all valid original caption pairs remain mapped
+    after deduplication.
+    """
+
+    valid_caption_pairs = 0
+
+    for sample in dataset:
+
+        if not isinstance(sample, dict):
+            continue
+
+        if get_caption(sample):
+            valid_caption_pairs += 1
+
+    mapped_pairs = sum(
+        len(
+            sample.get(
+                "_source_indices",
+                [],
+            )
+        )
+        for sample in unique_samples
+    )
+
+    max_occurrences = max(
+        (
+            len(
+                sample.get(
+                    "_source_indices",
+                    [],
+                )
+            )
+            for sample in unique_samples
+        ),
+        default=0,
+    )
+
+    return {
+        "total_pairs": len(dataset),
+
+        "valid_caption_pairs": (
+            valid_caption_pairs
+        ),
+
+        "unique_captions": len(
+            unique_samples
+        ),
+
+        "mapped_pairs": mapped_pairs,
+
+        "duplicate_pairs": (
+            valid_caption_pairs
+            - len(unique_samples)
+        ),
+
+        "max_occurrences": (
+            max_occurrences
+        ),
+    }
 
 
 # ============================================================
@@ -198,7 +298,7 @@ def select_samples(
     seed: int,
 ) -> List[Dict[str, Any]]:
     """
-    Select a reproducible random subset of UNIQUE captions.
+    Select reproducible UNIQUE captions.
 
     limit <= 0:
         use all unique captions.
@@ -212,25 +312,20 @@ def select_samples(
 
     rng = random.Random(seed)
 
-    selected = rng.sample(
+    return rng.sample(
         unique_samples,
         limit,
     )
 
-    return selected
-
 
 # ============================================================
-# Output helpers
+# Save final JSON
 # ============================================================
 
 def save_json(
     data: Dict[str, Any],
     output_path: str,
 ) -> None:
-    """
-    Save JSON output safely.
-    """
 
     path = Path(output_path)
 
@@ -243,6 +338,7 @@ def save_json(
         "w",
         encoding="utf-8",
     ) as f:
+
         json.dump(
             data,
             f,
@@ -258,9 +354,10 @@ def save_json(
 def run_extraction(
     input_path: str,
     output_path: str,
+    cache_path: str,
     limit: int,
     seed: int,
-    api_key: str,
+    api_key: Optional[str],
     base_url: str,
     model: str,
     temperature: float,
@@ -269,7 +366,7 @@ def run_extraction(
 ) -> None:
 
     # ========================================================
-    # 1. Load dataset
+    # 1. Dataset
     # ========================================================
 
     dataset = load_dataset(
@@ -282,74 +379,219 @@ def run_extraction(
         )
     )
 
+    mapping_stats = (
+        get_mapping_statistics(
+            dataset=dataset,
+            unique_samples=unique_samples,
+        )
+    )
+
+    # ========================================================
+    # 1.1 Mapping safety check
+    # ========================================================
+
+    if (
+        mapping_stats[
+            "mapped_pairs"
+        ]
+        !=
+        mapping_stats[
+            "valid_caption_pairs"
+        ]
+    ):
+        raise RuntimeError(
+            "Caption mapping failed: "
+            f"mapped_pairs="
+            f"{mapping_stats['mapped_pairs']}, "
+            f"valid_caption_pairs="
+            f"{mapping_stats['valid_caption_pairs']}"
+        )
+
+    # ========================================================
+    # 1.2 Select unique captions
+    # ========================================================
+
     selected_samples = select_samples(
         unique_samples=unique_samples,
         limit=limit,
         seed=seed,
     )
 
+    # ========================================================
+    # 2. Initialize cache
+    # ========================================================
+
+    cache = StructuredSemanticsCache(
+        cache_path=cache_path,
+        model=model,
+        prompt_version=PROMPT_VERSION,
+        schema_version=SCHEMA_VERSION,
+    )
+
+    # ========================================================
+    # 2.1 Pre-check cache coverage
+    # ========================================================
+
+    preexisting_cache_hits = 0
+
+    for sample in selected_samples:
+
+        normalized_caption = sample.get(
+            "_normalized_caption",
+            "",
+        )
+
+        if (
+            normalized_caption
+            and cache.has(
+                normalized_caption
+            )
+        ):
+            preexisting_cache_hits += 1
+
+    expected_cache_misses = (
+        len(selected_samples)
+        - preexisting_cache_hits
+    )
+
+    # ========================================================
+    # Console header
+    # ========================================================
+
     print()
-    print("=" * 70)
+    print("=" * 72)
     print("Structured Semantics Extraction")
-    print("=" * 70)
+    print("=" * 72)
 
     print(
-        f"Input pairs         : "
+        f"Input pairs           : "
         f"{len(dataset)}"
     )
 
     print(
-        f"Unique captions     : "
+        f"Valid caption pairs   : "
+        f"{mapping_stats['valid_caption_pairs']}"
+    )
+
+    print(
+        f"Unique captions       : "
         f"{len(unique_samples)}"
     )
 
     print(
-        f"Selected captions   : "
-        f"{len(selected_samples)}"
+        f"Duplicate pairs       : "
+        f"{mapping_stats['duplicate_pairs']}"
     )
 
     print(
-        f"Prompt version      : "
+        f"Mapped pairs          : "
+        f"{mapping_stats['mapped_pairs']}"
+    )
+
+    print(
+        f"Max occurrences       : "
+        f"{mapping_stats['max_occurrences']}"
+    )
+
+    print(
+        f"Selected captions     : "
+        f"{len(selected_samples)}"
+    )
+
+    print()
+
+    print(
+        f"Cache path            : "
+        f"{cache_path}"
+    )
+
+    print(
+        f"Cache records         : "
+        f"{len(cache)}"
+    )
+
+    print(
+        f"Selected cache hits   : "
+        f"{preexisting_cache_hits}"
+    )
+
+    print(
+        f"Expected API requests : "
+        f"{expected_cache_misses}"
+    )
+
+    print()
+
+    print(
+        f"Prompt version        : "
         f"{PROMPT_VERSION}"
     )
 
     print(
-        f"Schema version      : "
+        f"Schema version        : "
         f"{SCHEMA_VERSION}"
     )
 
     print(
-        f"Sanitizer version   : "
+        f"Sanitizer version     : "
         f"{SANITIZER_VERSION}"
     )
 
     print(
-        f"Model               : "
+        f"Model                 : "
         f"{model}"
     )
 
-    print("=" * 70)
+    print("=" * 72)
     print()
 
     # ========================================================
-    # 2. Initialize LLM
+    # 3. API key validation
     # ========================================================
 
-    client = LLMClient(
-        api_key=api_key,
-        base_url=base_url,
-        model=model,
-        temperature=temperature,
-        timeout=timeout,
-        max_retries=max_retries,
-    )
+    # If every selected caption already exists in cache,
+    # no API key is required.
+
+    if (
+        expected_cache_misses > 0
+        and not api_key
+    ):
+        raise RuntimeError(
+            "DASHSCOPE_API_KEY is not set, "
+            f"but {expected_cache_misses} selected captions "
+            "are missing from cache."
+        )
 
     # ========================================================
-    # 3. Global counters
+    # 4. LLM client
     # ========================================================
 
-    api_success_count = 0
-    api_failure_count = 0
+    client: Optional[LLMClient] = None
+
+    if expected_cache_misses > 0:
+
+        client = LLMClient(
+            api_key=api_key,
+            base_url=base_url,
+            model=model,
+            temperature=temperature,
+            timeout=timeout,
+            max_retries=max_retries,
+        )
+
+    # ========================================================
+    # 5. Counters
+    # ========================================================
+
+    extraction_success_count = 0
+    extraction_failure_count = 0
+
+    cache_hit_count = 0
+    cache_miss_count = 0
+
+    api_call_count = 0
+    api_call_success_count = 0
+    api_call_failure_count = 0
 
     raw_validation_valid_count = 0
     raw_validation_invalid_count = 0
@@ -373,17 +615,26 @@ def run_extraction(
     total_dropped_relations = 0
     total_reassigned_entity_ids = 0
 
-    # Final sanitized semantic statistics.
     total_entities = 0
     total_attributes = 0
     total_relations = 0
+
+    selected_original_pair_count = sum(
+        len(
+            sample.get(
+                "_source_indices",
+                [],
+            )
+        )
+        for sample in selected_samples
+    )
 
     results: List[
         Dict[str, Any]
     ] = []
 
     # ========================================================
-    # 4. Extraction loop
+    # 6. Extraction loop
     # ========================================================
 
     for sample_index, sample in enumerate(
@@ -392,19 +643,37 @@ def run_extraction(
 
         caption = sample["caption"]
 
+        normalized_caption = sample[
+            "_normalized_caption"
+        ]
+
+        source_indices = sample.get(
+            "_source_indices",
+            [],
+        )
+
         print(
-            f"[{sample_index + 1:04d}/"
-            f"{len(selected_samples):04d}] "
+            f"[{sample_index + 1:05d}/"
+            f"{len(selected_samples):05d}] "
             f"{caption}"
         )
+
+        # ====================================================
+        # Result metadata
+        # ====================================================
 
         result_item: Dict[str, Any] = {
             "sample_index": sample_index,
 
-            "source_index": sample.get(
-                "_source_index"
+            "source_indices": (
+                source_indices
             ),
 
+            "num_occurrences": len(
+                source_indices
+            ),
+
+            # Metadata from first occurrence only.
             "image_id": sample.get(
                 "image_id"
             ),
@@ -424,66 +693,168 @@ def run_extraction(
             "caption": caption,
 
             "normalized_caption": (
-                sample.get(
-                    "_normalized_caption"
-                )
+                normalized_caption
             ),
         }
 
         # ====================================================
-        # 4.1 LLM extraction
+        # 6.1 Cache lookup
         # ====================================================
 
-        try:
-            raw_semantics = client.extract(
-                caption
+        cache_record = cache.get(
+            normalized_caption
+        )
+
+        raw_semantics = None
+
+        if isinstance(
+            cache_record,
+            dict,
+        ):
+
+            cached_raw = cache_record.get(
+                "raw_structured_semantics"
             )
 
-            api_success_count += 1
+            if isinstance(
+                cached_raw,
+                dict,
+            ):
+
+                raw_semantics = cached_raw
+
+                cache_hit_count += 1
+
+                result_item[
+                    "cache_hit"
+                ] = True
+
+                result_item[
+                    "api_called"
+                ] = False
+
+                result_item[
+                    "extraction_source"
+                ] = "cache"
+
+                print(
+                    "    Source          : CACHE HIT"
+                )
+
+        # ====================================================
+        # 6.2 Cache miss -> API
+        # ====================================================
+
+        if raw_semantics is None:
+
+            cache_miss_count += 1
 
             result_item[
-                "api_success"
-            ] = True
-
-        except Exception as exc:
-
-            api_failure_count += 1
-
-            result_item[
-                "api_success"
+                "cache_hit"
             ] = False
 
             result_item[
-                "api_error"
-            ] = str(exc)
+                "api_called"
+            ] = True
+
+            result_item[
+                "extraction_source"
+            ] = "api"
+
+            api_call_count += 1
 
             print(
-                f"    API ERROR: {exc}"
+                "    Source          : API"
             )
 
-            results.append(
-                result_item
-            )
+            try:
 
-            continue
+                if client is None:
+                    raise RuntimeError(
+                        "LLM client was not initialized."
+                    )
+
+                raw_semantics = client.extract(
+                    caption
+                )
+
+                api_call_success_count += 1
+
+                # ============================================
+                # IMPORTANT:
+                # Immediately save RAW EAR to JSONL cache.
+                #
+                # If the program crashes after this point,
+                # this API result is still preserved.
+                # ============================================
+
+                cache.put(
+                    normalized_caption=(
+                        normalized_caption
+                    ),
+
+                    caption=caption,
+
+                    raw_structured_semantics=(
+                        raw_semantics
+                    ),
+                )
+
+            except Exception as exc:
+
+                api_call_failure_count += 1
+                extraction_failure_count += 1
+
+                result_item[
+                    "api_success"
+                ] = False
+
+                result_item[
+                    "extraction_success"
+                ] = False
+
+                result_item[
+                    "api_error"
+                ] = str(exc)
+
+                print(
+                    f"    API ERROR       : "
+                    f"{exc}"
+                )
+
+                results.append(
+                    result_item
+                )
+
+                continue
 
         # ====================================================
-        # 4.2 Preserve RAW EAR
+        # 6.3 Extraction available
+        # ====================================================
+
+        extraction_success_count += 1
+
+        # Keep for backwards compatibility with statistics.py.
+        # Here True means usable raw extraction exists.
+        result_item[
+            "api_success"
+        ] = True
+
+        result_item[
+            "extraction_success"
+        ] = True
+
+        # ====================================================
+        # 6.4 Preserve RAW EAR
         # ====================================================
 
         result_item[
             "raw_structured_semantics"
         ] = raw_semantics
 
-        # ----------------------------------------------------
-        # Optional RAW structural validation.
-        #
-        # This allows us to distinguish:
-        #
-        # LLM raw quality
-        # vs
-        # sanitizer-repaired quality
-        # ----------------------------------------------------
+        # ====================================================
+        # 6.5 Validate RAW EAR
+        # ====================================================
 
         raw_validation = (
             validate_structured_semantics(
@@ -495,13 +866,15 @@ def run_extraction(
             "raw_validation"
         ] = raw_validation
 
-        if raw_validation["valid"]:
+        if raw_validation[
+            "valid"
+        ]:
             raw_validation_valid_count += 1
         else:
             raw_validation_invalid_count += 1
 
         # ====================================================
-        # 4.3 Structural sanitization
+        # 6.6 Sanitize
         # ====================================================
 
         sanitization_result = (
@@ -530,9 +903,9 @@ def run_extraction(
             "sanitization"
         ] = sanitization_report
 
-        # ----------------------------------------------------
+        # ====================================================
         # Sanitizer statistics
-        # ----------------------------------------------------
+        # ====================================================
 
         if sanitization_report[
             "changed"
@@ -588,7 +961,7 @@ def run_extraction(
         )
 
         # ====================================================
-        # 4.4 Validate sanitized EAR
+        # 6.7 Validate sanitized EAR
         # ====================================================
 
         validation = (
@@ -601,31 +974,37 @@ def run_extraction(
             "validation"
         ] = validation
 
-        if validation["valid"]:
-            (
-                sanitized_validation_valid_count
-            ) += 1
+        if validation[
+            "valid"
+        ]:
+            sanitized_validation_valid_count += 1
         else:
-            (
-                sanitized_validation_invalid_count
-            ) += 1
+            sanitized_validation_invalid_count += 1
 
-        if validation["warnings"]:
+        if validation[
+            "warnings"
+        ]:
             warning_sample_count += 1
 
-        if validation["errors"]:
+        if validation[
+            "errors"
+        ]:
             error_sample_count += 1
 
         total_warnings += len(
-            validation["warnings"]
+            validation[
+                "warnings"
+            ]
         )
 
         total_validation_errors += len(
-            validation["errors"]
+            validation[
+                "errors"
+            ]
         )
 
         # ====================================================
-        # 4.5 Semantic statistics
+        # 6.8 Semantic statistics
         # ====================================================
 
         stats = validation[
@@ -651,7 +1030,7 @@ def run_extraction(
         )
 
         # ====================================================
-        # 4.6 Console diagnostics
+        # 6.9 Console diagnostics
         # ====================================================
 
         raw_status = (
@@ -679,12 +1058,12 @@ def run_extraction(
         )
 
         print(
-            f"    Raw validation : "
+            f"    Raw validation  : "
             f"{raw_status}"
         )
 
         print(
-            f"    Sanitizer      : "
+            f"    Sanitizer       : "
             f"{sanitize_status} "
             f"({len(sanitizer_actions)} actions)"
         )
@@ -694,38 +1073,16 @@ def run_extraction(
             f"{final_status}"
         )
 
-        if validation[
-            "errors"
-        ]:
-            for error in validation[
-                "errors"
-            ]:
-                print(
-                    f"      ERROR: "
-                    f"{error}"
-                )
-
-        if validation[
-            "warnings"
-        ]:
-            for warning in validation[
-                "warnings"
-            ]:
-                print(
-                    f"      WARNING: "
-                    f"{warning}"
-                )
-
         results.append(
             result_item
         )
 
     # ========================================================
-    # 5. Summary
+    # 7. Summary
     # ========================================================
 
     successful_samples = (
-        api_success_count
+        extraction_success_count
     )
 
     if successful_samples > 0:
@@ -750,28 +1107,84 @@ def run_extraction(
             / successful_samples
         )
 
+        cache_hit_rate = (
+            cache_hit_count
+            / successful_samples
+        )
+
     else:
 
         avg_entities = 0.0
         avg_attributes = 0.0
         avg_relations = 0.0
+
         sanitizer_change_rate = 0.0
+        cache_hit_rate = 0.0
 
     summary = {
         # ----------------------------------------------------
-        # API
+        # Mapping
         # ----------------------------------------------------
 
-        "api_success_count": (
-            api_success_count
+        "selected_unique_captions": (
+            len(selected_samples)
         ),
 
-        "api_failure_count": (
-            api_failure_count
+        "selected_original_pairs": (
+            selected_original_pair_count
         ),
 
         # ----------------------------------------------------
-        # Raw structural validation
+        # Extraction
+        # ----------------------------------------------------
+
+        "extraction_success_count": (
+            extraction_success_count
+        ),
+
+        "extraction_failure_count": (
+            extraction_failure_count
+        ),
+
+        # ----------------------------------------------------
+        # Cache
+        # ----------------------------------------------------
+
+        "cache_hit_count": (
+            cache_hit_count
+        ),
+
+        "cache_miss_count": (
+            cache_miss_count
+        ),
+
+        "cache_hit_rate": round(
+            cache_hit_rate,
+            6,
+        ),
+
+        "final_cache_records": len(
+            cache
+        ),
+
+        # ----------------------------------------------------
+        # Real API calls
+        # ----------------------------------------------------
+
+        "api_call_count": (
+            api_call_count
+        ),
+
+        "api_call_success_count": (
+            api_call_success_count
+        ),
+
+        "api_call_failure_count": (
+            api_call_failure_count
+        ),
+
+        # ----------------------------------------------------
+        # Raw validation
         # ----------------------------------------------------
 
         "raw_validation_valid_count": (
@@ -783,7 +1196,7 @@ def run_extraction(
         ),
 
         # ----------------------------------------------------
-        # Sanitized validation
+        # Final validation
         # ----------------------------------------------------
 
         "validation_valid_count": (
@@ -848,7 +1261,7 @@ def run_extraction(
         ),
 
         # ----------------------------------------------------
-        # Final sanitized EAR semantic statistics
+        # Semantics
         # ----------------------------------------------------
 
         "total_entities": (
@@ -880,7 +1293,7 @@ def run_extraction(
     }
 
     # ========================================================
-    # 6. Metadata
+    # 8. Metadata
     # ========================================================
 
     metadata = {
@@ -892,12 +1305,40 @@ def run_extraction(
             dataset
         ),
 
+        "valid_caption_pairs": (
+            mapping_stats[
+                "valid_caption_pairs"
+            ]
+        ),
+
         "unique_captions": len(
             unique_samples
         ),
 
+        "duplicate_pairs": (
+            mapping_stats[
+                "duplicate_pairs"
+            ]
+        ),
+
+        "mapped_pairs": (
+            mapping_stats[
+                "mapped_pairs"
+            ]
+        ),
+
+        "max_caption_occurrences": (
+            mapping_stats[
+                "max_occurrences"
+            ]
+        ),
+
         "selected_samples": len(
             selected_samples
+        ),
+
+        "selected_original_pairs": (
+            selected_original_pair_count
         ),
 
         "random_seed": seed,
@@ -924,15 +1365,47 @@ def run_extraction(
             SANITIZER_VERSION
         ),
 
+        "cache": {
+            "enabled": True,
+            "path": cache_path,
+            "stores": "raw_structured_semantics",
+        },
+
+        "deduplication": {
+            "enabled": True,
+
+            "method": (
+                "normalized_exact_match"
+            ),
+
+            "normalization": [
+                "strip",
+                "lowercase",
+                "collapse_whitespace",
+            ],
+
+            "semantic_deduplication": (
+                False
+            ),
+
+            "preserve_all_source_indices": (
+                True
+            ),
+        },
+
         "pipeline": [
-            "llm_raw_ear",
+            "caption_normalization",
+            "exact_caption_deduplication",
+            "cache_lookup",
+            "llm_raw_ear_if_cache_miss",
+            "raw_ear_cache_write",
             "structural_sanitizer",
             "generic_schema_validator",
         ],
     }
 
     # ========================================================
-    # 7. Final output
+    # 9. Save final JSON
     # ========================================================
 
     output_data = {
@@ -947,37 +1420,101 @@ def run_extraction(
     )
 
     # ========================================================
-    # 8. Console summary
+    # 10. Console summary
     # ========================================================
 
     print()
-    print("=" * 70)
+    print("=" * 72)
     print("Extraction Summary")
-    print("=" * 70)
+    print("=" * 72)
+
+    print()
+    print("Caption mapping:")
+
+    print(
+        f"  Original pairs      : "
+        f"{len(dataset)}"
+    )
+
+    print(
+        f"  Unique captions     : "
+        f"{len(unique_samples)}"
+    )
+
+    print(
+        f"  Mapped pairs        : "
+        f"{mapping_stats['mapped_pairs']}"
+    )
+
+    print(
+        f"  Selected unique     : "
+        f"{len(selected_samples)}"
+    )
+
+    print(
+        f"  Selected pairs      : "
+        f"{selected_original_pair_count}"
+    )
+
+    print()
+    print("Cache:")
+
+    print(
+        f"  Hits                : "
+        f"{cache_hit_count}"
+    )
+
+    print(
+        f"  Misses              : "
+        f"{cache_miss_count}"
+    )
+
+    print(
+        f"  Final records       : "
+        f"{len(cache)}"
+    )
 
     print()
     print("API:")
 
     print(
-        f"  Successful        : "
-        f"{api_success_count}"
+        f"  Actual API calls    : "
+        f"{api_call_count}"
     )
 
     print(
-        f"  Failed            : "
-        f"{api_failure_count}"
+        f"  Successful calls    : "
+        f"{api_call_success_count}"
+    )
+
+    print(
+        f"  Failed calls        : "
+        f"{api_call_failure_count}"
+    )
+
+    print()
+    print("Extraction:")
+
+    print(
+        f"  Successful samples  : "
+        f"{extraction_success_count}"
+    )
+
+    print(
+        f"  Failed samples      : "
+        f"{extraction_failure_count}"
     )
 
     print()
     print("Raw validation:")
 
     print(
-        f"  Valid             : "
+        f"  Valid               : "
         f"{raw_validation_valid_count}"
     )
 
     print(
-        f"  Invalid           : "
+        f"  Invalid             : "
         f"{raw_validation_invalid_count}"
     )
 
@@ -985,103 +1522,88 @@ def run_extraction(
     print("Sanitizer:")
 
     print(
-        f"  Changed samples   : "
+        f"  Changed samples     : "
         f"{sanitizer_changed_sample_count}"
     )
 
     print(
-        f"  Unchanged samples : "
+        f"  Unchanged samples   : "
         f"{sanitizer_unchanged_sample_count}"
     )
 
     print(
-        f"  Total actions     : "
+        f"  Total actions       : "
         f"{total_sanitizer_actions}"
     )
 
     print(
-        f"  Dropped entities  : "
+        f"  Dropped entities    : "
         f"{total_dropped_entities}"
     )
 
     print(
-        f"  Dropped attributes: "
+        f"  Dropped attributes  : "
         f"{total_dropped_attributes}"
     )
 
     print(
-        f"  Dropped relations : "
+        f"  Dropped relations   : "
         f"{total_dropped_relations}"
-    )
-
-    print(
-        f"  Reassigned IDs    : "
-        f"{total_reassigned_entity_ids}"
     )
 
     print()
     print("Final validation:")
 
     print(
-        f"  Valid             : "
+        f"  Valid               : "
         f"{sanitized_validation_valid_count}"
     )
 
     print(
-        f"  Invalid           : "
+        f"  Invalid             : "
         f"{sanitized_validation_invalid_count}"
     )
 
     print(
-        f"  Samples w/warning : "
+        f"  Samples w/warning   : "
         f"{warning_sample_count}"
     )
 
     print(
-        f"  Samples w/error   : "
+        f"  Samples w/error     : "
         f"{error_sample_count}"
-    )
-
-    print(
-        f"  Total warnings    : "
-        f"{total_warnings}"
-    )
-
-    print(
-        f"  Total errors      : "
-        f"{total_validation_errors}"
     )
 
     print()
     print("Semantic statistics:")
 
     print(
-        f"  Total entities    : "
+        f"  Total entities      : "
         f"{total_entities}"
     )
 
     print(
-        f"  Total attributes  : "
+        f"  Total attributes    : "
         f"{total_attributes}"
     )
 
     print(
-        f"  Total relations   : "
+        f"  Total relations     : "
         f"{total_relations}"
     )
 
     print(
-        f"  Avg entities      : "
+        f"  Avg entities        : "
         f"{avg_entities:.4f}"
     )
 
     print(
-        f"  Avg attributes    : "
+        f"  Avg attributes      : "
         f"{avg_attributes:.4f}"
     )
 
     print(
-        f"  Avg relations     : "
+        f"  Avg relations       : "
         f"{avg_relations:.4f}"
     )
 
@@ -1091,7 +1613,7 @@ def run_extraction(
         f"{output_path}"
     )
 
-    print("=" * 70)
+    print("=" * 72)
 
 
 # ============================================================
@@ -1102,8 +1624,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Extract open-vocabulary EAR structured "
-            "semantics from image captions."
+            "Extract open-vocabulary EAR structured semantics "
+            "with exact caption deduplication and persistent "
+            "cache/resume."
         )
     )
 
@@ -1111,14 +1634,24 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--input",
         type=str,
         required=True,
-        help="Input dataset JSON file.",
+        help="Input dataset JSON.",
     )
 
     parser.add_argument(
         "--output",
         type=str,
         required=True,
-        help="Output JSON file.",
+        help="Final extraction JSON.",
+    )
+
+    parser.add_argument(
+        "--cache-path",
+        type=str,
+        default=(
+            "cache/structured_semantics/"
+            "qwen37_v30_open_schema_v1.jsonl"
+        ),
+        help="Persistent RAW EAR JSONL cache.",
     )
 
     parser.add_argument(
@@ -1126,7 +1659,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=20,
         help=(
-            "Number of UNIQUE captions to process. "
+            "Number of UNIQUE captions. "
             "Use <=0 for all captions."
         ),
     )
@@ -1135,7 +1668,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--seed",
         type=int,
         default=42,
-        help="Random sampling seed.",
     )
 
     parser.add_argument(
@@ -1190,15 +1722,10 @@ def main() -> None:
         "DASHSCOPE_API_KEY"
     )
 
-    if not api_key:
-        raise RuntimeError(
-            "Environment variable "
-            "DASHSCOPE_API_KEY is not set."
-        )
-
     run_extraction(
         input_path=args.input,
         output_path=args.output,
+        cache_path=args.cache_path,
         limit=args.limit,
         seed=args.seed,
         api_key=api_key,

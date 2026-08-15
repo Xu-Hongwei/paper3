@@ -14,6 +14,13 @@ class CLIPRetrieval(nn.Module):
         self.backbone = CLIPBackbone(
             model_name=config["backbone"],
             pretrained=config["pretrained"],
+            pretrained_local_path=config.get(
+                "pretrained_local_path",
+            ),
+            prefer_local_pretrained=config.get(
+                "prefer_local_pretrained",
+                True,
+            ),
         )
 
     def forward(

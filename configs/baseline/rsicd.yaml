@@ -1,5 +1,5 @@
 experiment:
-  name: clip_rsicd_fullft_mult_60ep
+  name: clip_rsicd_fullft_mult_30ep_5e-6
 
 dataset:
   name: rsicd
@@ -19,9 +19,11 @@ model:
   name: clip
   backbone: ViT-B-32-quickgelu
   pretrained: openai
+  pretrained_local_path: C:/Users/Administrator/.cache/clip/ViT-B-32.pt
+  prefer_local_pretrained: true
 
 training:
-  epochs: 60
+  epochs: 30
   batch_size: 64
   eval_batch_size: 128
   text_batch_size: 256
@@ -32,7 +34,7 @@ training:
 
 optimizer:
   name: adamw
-  lr: 1.0e-5
+  lr: 5.0e-6
   weight_decay: 0.01
 
 scheduler:

@@ -92,3 +92,8 @@ data_*/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Accidental placeholder files from editing tool (can be removed safely)
+README.md 
+README.md.
+README~1.MD

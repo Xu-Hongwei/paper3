@@ -1,0 +1,5755 @@
+{
+  "analysis": {
+    "semantic_source": "sanitized",
+    "top_k": 100,
+    "analyzed_semantics_count": 12296
+  },
+  "metadata": {
+    "dataset": "RSICD",
+    "input_file": "E:/paper3/data/rsicd/rsicd_train.json",
+    "total_pairs": 39310,
+    "valid_caption_pairs": 39310,
+    "unique_captions": 12296,
+    "duplicate_pairs": 27014,
+    "mapped_pairs": 39310,
+    "max_caption_occurrences": 448,
+    "selected_samples": 12296,
+    "selected_original_pairs": 39310,
+    "random_seed": 42,
+    "provider": "Alibaba Cloud Bailian",
+    "model": "qwen3.7-flash-2026-07-15",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "temperature": 0.1,
+    "prompt_version": "v3.0-open",
+    "schema_version": "v1",
+    "sanitizer_version": "v1",
+    "cache": {
+      "enabled": true,
+      "path": "E:/paper3/cache/structured_semantics/qwen37_v30_open_schema_v1.jsonl",
+      "stores": "raw_structured_semantics"
+    },
+    "deduplication": {
+      "enabled": true,
+      "method": "normalized_exact_match",
+      "normalization": [
+        "strip",
+        "lowercase",
+        "collapse_whitespace"
+      ],
+      "semantic_deduplication": false,
+      "preserve_all_source_indices": true
+    },
+    "pipeline": [
+      "caption_normalization",
+      "exact_caption_deduplication",
+      "cache_lookup",
+      "llm_raw_ear_if_cache_miss",
+      "raw_ear_cache_write",
+      "structural_sanitizer",
+      "generic_schema_validator"
+    ]
+  },
+  "original_extraction_summary": {
+    "selected_unique_captions": 12296,
+    "selected_original_pairs": 39310,
+    "extraction_success_count": 12296,
+    "extraction_failure_count": 0,
+    "cache_hit_count": 0,
+    "cache_miss_count": 12296,
+    "cache_hit_rate": 0.0,
+    "final_cache_records": 12296,
+    "api_call_count": 12296,
+    "api_call_success_count": 12296,
+    "api_call_failure_count": 0,
+    "raw_validation_valid_count": 11925,
+    "raw_validation_invalid_count": 371,
+    "validation_valid_count": 12296,
+    "validation_invalid_count": 0,
+    "warning_sample_count": 263,
+    "error_sample_count": 0,
+    "total_warnings": 287,
+    "total_validation_errors": 0,
+    "sanitizer_changed_sample_count": 371,
+    "sanitizer_unchanged_sample_count": 11925,
+    "sanitizer_change_rate": 0.030172,
+    "total_sanitizer_actions": 426,
+    "total_dropped_entities": 0,
+    "total_dropped_attributes": 0,
+    "total_dropped_relations": 64,
+    "total_reassigned_entity_ids": 0,
+    "total_entities": 32667,
+    "total_attributes": 25376,
+    "total_relations": 18333,
+    "avg_entities_per_caption": 2.6567,
+    "avg_attributes_per_caption": 2.0638,
+    "avg_relations_per_caption": 1.491
+  },
+  "pipeline_quality": {
+    "total_samples": 12296,
+    "api_success": 12296,
+    "api_failure": 0,
+    "api_success_rate_percent": 100.0,
+    "raw_valid": 11925,
+    "raw_invalid": 371,
+    "raw_valid_rate_percent": 96.9828,
+    "final_valid": 12296,
+    "final_invalid": 0,
+    "final_valid_rate_percent": 100.0,
+    "warning_samples": 263,
+    "error_samples": 0,
+    "total_warnings": 287,
+    "total_errors": 0
+  },
+  "sanitizer": {
+    "changed_samples": 371,
+    "unchanged_samples": 11925,
+    "change_rate_percent": 3.0172,
+    "total_actions": 426,
+    "action_frequency": {
+      "repair_attributes_field": 362,
+      "drop_invalid_relation_endpoint": 52,
+      "drop_self_relation": 10,
+      "drop_empty_relation_endpoint": 2
+    },
+    "dropped_entities": 0,
+    "dropped_attributes": 0,
+    "dropped_relations": 64,
+    "reassigned_entity_ids": 0
+  },
+  "entities": {
+    "total": 32667,
+    "unique_phrases": 2263,
+    "singleton_phrases": 1396,
+    "singleton_ratio_percent": 61.688,
+    "avg_per_caption": 2.656718,
+    "per_caption_distribution": {
+      "count": 12296,
+      "mean": 2.656718,
+      "min": 0,
+      "max": 8,
+      "histogram": {
+        "0": 1,
+        "1": 871,
+        "2": 5119,
+        "3": 4141,
+        "4": 1756,
+        "5": 348,
+        "6": 50,
+        "7": 9,
+        "8": 1
+      }
+    },
+    "duplicate_entity_text_samples": 124,
+    "top": [
+      {
+        "text": "trees",
+        "count": 3348
+      },
+      {
+        "text": "buildings",
+        "count": 3037
+      },
+      {
+        "text": "playground",
+        "count": 1299
+      },
+      {
+        "text": "road",
+        "count": 1250
+      },
+      {
+        "text": "river",
+        "count": 1239
+      },
+      {
+        "text": "cars",
+        "count": 681
+      },
+      {
+        "text": "building",
+        "count": 642
+      },
+      {
+        "text": "plants",
+        "count": 616
+      },
+      {
+        "text": "parking lot",
+        "count": 585
+      },
+      {
+        "text": "pond",
+        "count": 548
+      },
+      {
+        "text": "bridge",
+        "count": 531
+      },
+      {
+        "text": "football field",
+        "count": 440
+      },
+      {
+        "text": "basketball fields",
+        "count": 429
+      },
+      {
+        "text": "roads",
+        "count": 423
+      },
+      {
+        "text": "houses",
+        "count": 419
+      },
+      {
+        "text": "beach",
+        "count": 349
+      },
+      {
+        "text": "square",
+        "count": 338
+      },
+      {
+        "text": "park",
+        "count": 337
+      },
+      {
+        "text": "airport",
+        "count": 335
+      },
+      {
+        "text": "baseball field",
+        "count": 322
+      },
+      {
+        "text": "tennis courts",
+        "count": 313
+      },
+      {
+        "text": "planes",
+        "count": 302
+      },
+      {
+        "text": "storage tanks",
+        "count": 284
+      },
+      {
+        "text": "port",
+        "count": 279
+      },
+      {
+        "text": "stadium",
+        "count": 275
+      },
+      {
+        "text": "viaduct",
+        "count": 273
+      },
+      {
+        "text": "bareland",
+        "count": 268
+      },
+      {
+        "text": "boats",
+        "count": 265
+      },
+      {
+        "text": "forest",
+        "count": 252
+      },
+      {
+        "text": "land",
+        "count": 238
+      },
+      {
+        "text": "church",
+        "count": 237
+      },
+      {
+        "text": "residential area",
+        "count": 217
+      },
+      {
+        "text": "desert",
+        "count": 208
+      },
+      {
+        "text": "house",
+        "count": 197
+      },
+      {
+        "text": "resort",
+        "count": 196
+      },
+      {
+        "text": "school",
+        "count": 191
+      },
+      {
+        "text": "ocean",
+        "count": 176
+      },
+      {
+        "text": "meadows",
+        "count": 175
+      },
+      {
+        "text": "farmlands",
+        "count": 169
+      },
+      {
+        "text": "farmland",
+        "count": 168
+      },
+      {
+        "text": "lake",
+        "count": 160
+      },
+      {
+        "text": "meadow",
+        "count": 159
+      },
+      {
+        "text": "area",
+        "count": 152
+      },
+      {
+        "text": "roof",
+        "count": 145
+      },
+      {
+        "text": "baseball fields",
+        "count": 137
+      },
+      {
+        "text": "swimming pool",
+        "count": 135
+      },
+      {
+        "text": "industrial area",
+        "count": 135
+      },
+      {
+        "text": "grass",
+        "count": 128
+      },
+      {
+        "text": "water",
+        "count": 127
+      },
+      {
+        "text": "basketball field",
+        "count": 125
+      },
+      {
+        "text": "factory",
+        "count": 125
+      },
+      {
+        "text": "railway station",
+        "count": 124
+      },
+      {
+        "text": "basketball courts",
+        "count": 122
+      },
+      {
+        "text": "parking lots",
+        "count": 122
+      },
+      {
+        "text": "ground",
+        "count": 119
+      },
+      {
+        "text": "mountain",
+        "count": 116
+      },
+      {
+        "text": "lawn",
+        "count": 100
+      },
+      {
+        "text": "ponds",
+        "count": 98
+      },
+      {
+        "text": "green trees",
+        "count": 98
+      },
+      {
+        "text": "sea",
+        "count": 93
+      },
+      {
+        "text": "grassland",
+        "count": 89
+      },
+      {
+        "text": "lawns",
+        "count": 88
+      },
+      {
+        "text": "people",
+        "count": 86
+      },
+      {
+        "text": "bridges",
+        "count": 85
+      },
+      {
+        "text": "waves",
+        "count": 84
+      },
+      {
+        "text": "mountains",
+        "count": 84
+      },
+      {
+        "text": "commercial area",
+        "count": 83
+      },
+      {
+        "text": "tanks",
+        "count": 81
+      },
+      {
+        "text": "playgrounds",
+        "count": 79
+      },
+      {
+        "text": "court",
+        "count": 76
+      },
+      {
+        "text": "tennis court",
+        "count": 69
+      },
+      {
+        "text": "crossroads",
+        "count": 68
+      },
+      {
+        "text": "runways",
+        "count": 67
+      },
+      {
+        "text": "railways",
+        "count": 65
+      },
+      {
+        "text": "ships",
+        "count": 65
+      },
+      {
+        "text": "plane",
+        "count": 64
+      },
+      {
+        "text": "car",
+        "count": 63
+      },
+      {
+        "text": "highway",
+        "count": 59
+      },
+      {
+        "text": "residential",
+        "count": 58
+      },
+      {
+        "text": "field",
+        "count": 58
+      },
+      {
+        "text": "green plants",
+        "count": 56
+      },
+      {
+        "text": "center building",
+        "count": 55
+      },
+      {
+        "text": "boat",
+        "count": 55
+      },
+      {
+        "text": "woods",
+        "count": 54
+      },
+      {
+        "text": "center",
+        "count": 53
+      },
+      {
+        "text": "runway",
+        "count": 52
+      },
+      {
+        "text": "residential areas",
+        "count": 50
+      },
+      {
+        "text": "pool",
+        "count": 46
+      },
+      {
+        "text": "roofs",
+        "count": 46
+      },
+      {
+        "text": "blocks",
+        "count": 45
+      },
+      {
+        "text": "bare land",
+        "count": 45
+      },
+      {
+        "text": "residential buildings",
+        "count": 43
+      },
+      {
+        "text": "tree",
+        "count": 43
+      },
+      {
+        "text": "bank",
+        "count": 41
+      },
+      {
+        "text": "barelands",
+        "count": 41
+      },
+      {
+        "text": "city",
+        "count": 40
+      },
+      {
+        "text": "green meadows",
+        "count": 40
+      },
+      {
+        "text": "street",
+        "count": 39
+      },
+      {
+        "text": "exercise yard",
+        "count": 38
+      },
+      {
+        "text": "circle square",
+        "count": 38
+      }
+    ]
+  },
+  "attributes": {
+    "total": 25376,
+    "unique_types": 30,
+    "unique_values": 1854,
+    "avg_per_caption": 2.063761,
+    "avg_per_entity": 0.776808,
+    "captions_with_attributes": 11548,
+    "zero_attribute_captions": 748,
+    "coverage_percent": 93.9167,
+    "per_caption_distribution": {
+      "count": 12296,
+      "mean": 2.063761,
+      "min": 0,
+      "max": 9,
+      "histogram": {
+        "0": 748,
+        "1": 3505,
+        "2": 4053,
+        "3": 2580,
+        "4": 1104,
+        "5": 238,
+        "6": 59,
+        "7": 8,
+        "9": 1
+      }
+    },
+    "per_entity_distribution": {
+      "count": 32667,
+      "mean": 0.776808,
+      "min": 0,
+      "max": 5,
+      "histogram": {
+        "0": 13664,
+        "1": 13077,
+        "2": 5507,
+        "3": 393,
+        "4": 24,
+        "5": 2
+      }
+    },
+    "type_frequency": {
+      "count": 10397,
+      "color": 7072,
+      "size": 2300,
+      "shape": 1809,
+      "other": 1239,
+      "state": 1095,
+      "density": 524,
+      "position": 505,
+      "orientation": 172,
+      "presence": 169,
+      "material": 23,
+      "quantity": 23,
+      "part": 8,
+      "composition": 7,
+      "pattern": 6,
+      "arrangement": 5,
+      "quality": 4,
+      "relation_to": 4,
+      "distribution": 2,
+      "color/clarity": 2,
+      "variety": 1,
+      "has_feature": 1,
+      "semantic_type": 1,
+      "semantic_subtype": 1,
+      "depth": 1,
+      "visibility": 1,
+      "content": 1,
+      "part_color": 1,
+      "purpose": 1,
+      "age": 1
+    },
+    "top_types": [
+      {
+        "type": "count",
+        "count": 10397
+      },
+      {
+        "type": "color",
+        "count": 7072
+      },
+      {
+        "type": "size",
+        "count": 2300
+      },
+      {
+        "type": "shape",
+        "count": 1809
+      },
+      {
+        "type": "other",
+        "count": 1239
+      },
+      {
+        "type": "state",
+        "count": 1095
+      },
+      {
+        "type": "density",
+        "count": 524
+      },
+      {
+        "type": "position",
+        "count": 505
+      },
+      {
+        "type": "orientation",
+        "count": 172
+      },
+      {
+        "type": "presence",
+        "count": 169
+      },
+      {
+        "type": "material",
+        "count": 23
+      },
+      {
+        "type": "quantity",
+        "count": 23
+      },
+      {
+        "type": "part",
+        "count": 8
+      },
+      {
+        "type": "composition",
+        "count": 7
+      },
+      {
+        "type": "pattern",
+        "count": 6
+      },
+      {
+        "type": "arrangement",
+        "count": 5
+      },
+      {
+        "type": "quality",
+        "count": 4
+      },
+      {
+        "type": "relation_to",
+        "count": 4
+      },
+      {
+        "type": "distribution",
+        "count": 2
+      },
+      {
+        "type": "color/clarity",
+        "count": 2
+      },
+      {
+        "type": "variety",
+        "count": 1
+      },
+      {
+        "type": "has_feature",
+        "count": 1
+      },
+      {
+        "type": "semantic_type",
+        "count": 1
+      },
+      {
+        "type": "semantic_subtype",
+        "count": 1
+      },
+      {
+        "type": "depth",
+        "count": 1
+      },
+      {
+        "type": "visibility",
+        "count": 1
+      },
+      {
+        "type": "content",
+        "count": 1
+      },
+      {
+        "type": "part_color",
+        "count": 1
+      },
+      {
+        "type": "purpose",
+        "count": 1
+      },
+      {
+        "type": "age",
+        "count": 1
+      }
+    ],
+    "top_values": [
+      {
+        "value": "green",
+        "count": 3804
+      },
+      {
+        "value": "many",
+        "count": 3514
+      },
+      {
+        "value": "some",
+        "count": 2023
+      },
+      {
+        "value": "several",
+        "count": 1579
+      },
+      {
+        "value": "two",
+        "count": 1214
+      },
+      {
+        "value": "white",
+        "count": 798
+      },
+      {
+        "value": "large",
+        "count": 765
+      },
+      {
+        "value": "three",
+        "count": 412
+      },
+      {
+        "value": "small",
+        "count": 323
+      },
+      {
+        "value": "yellow",
+        "count": 312
+      },
+      {
+        "value": "red",
+        "count": 300
+      },
+      {
+        "value": "parked",
+        "count": 283
+      },
+      {
+        "value": "four",
+        "count": 255
+      },
+      {
+        "value": "curved",
+        "count": 231
+      },
+      {
+        "value": "a lot of",
+        "count": 224
+      },
+      {
+        "value": "long",
+        "count": 214
+      },
+      {
+        "value": "blue",
+        "count": 207
+      },
+      {
+        "value": "irregular",
+        "count": 202
+      },
+      {
+        "value": "dense",
+        "count": 197
+      },
+      {
+        "value": "gray",
+        "count": 181
+      },
+      {
+        "value": "tall",
+        "count": 180
+      },
+      {
+        "value": "grey",
+        "count": 159
+      },
+      {
+        "value": "dark green",
+        "count": 158
+      },
+      {
+        "value": "rectangular",
+        "count": 150
+      },
+      {
+        "value": "brown",
+        "count": 141
+      },
+      {
+        "value": "lush",
+        "count": 135
+      },
+      {
+        "value": "big",
+        "count": 132
+      },
+      {
+        "value": "bare",
+        "count": 130
+      },
+      {
+        "value": "black",
+        "count": 127
+      },
+      {
+        "value": "a large number of",
+        "count": 121
+      },
+      {
+        "value": "straight",
+        "count": 115
+      },
+      {
+        "value": "sparse",
+        "count": 101
+      },
+      {
+        "value": "oval",
+        "count": 96
+      },
+      {
+        "value": "wide",
+        "count": 88
+      },
+      {
+        "value": "square",
+        "count": 87
+      },
+      {
+        "value": "orderly",
+        "count": 84
+      },
+      {
+        "value": "a few",
+        "count": 83
+      },
+      {
+        "value": "absent",
+        "count": 81
+      },
+      {
+        "value": "in the middle",
+        "count": 79
+      },
+      {
+        "value": "huge",
+        "count": 78
+      },
+      {
+        "value": "round",
+        "count": 76
+      },
+      {
+        "value": "khaki",
+        "count": 74
+      },
+      {
+        "value": "vast",
+        "count": 71
+      },
+      {
+        "value": "parallel",
+        "count": 69
+      },
+      {
+        "value": "six",
+        "count": 67
+      },
+      {
+        "value": "many pieces of",
+        "count": 64
+      },
+      {
+        "value": "circle",
+        "count": 58
+      },
+      {
+        "value": "piece of",
+        "count": 57
+      },
+      {
+        "value": "circular",
+        "count": 55
+      },
+      {
+        "value": "empty",
+        "count": 53
+      },
+      {
+        "value": "narrow",
+        "count": 52
+      },
+      {
+        "value": "scattered",
+        "count": 52
+      },
+      {
+        "value": "different",
+        "count": 52
+      },
+      {
+        "value": "medium",
+        "count": 50
+      },
+      {
+        "value": "different sizes",
+        "count": 48
+      },
+      {
+        "value": "five",
+        "count": 45
+      },
+      {
+        "value": "crowded",
+        "count": 45
+      },
+      {
+        "value": "bustling",
+        "count": 44
+      },
+      {
+        "value": "lots of",
+        "count": 40
+      },
+      {
+        "value": "running",
+        "count": 40
+      },
+      {
+        "value": "rectangle",
+        "count": 40
+      },
+      {
+        "value": "light green",
+        "count": 38
+      },
+      {
+        "value": "rows of",
+        "count": 37
+      },
+      {
+        "value": "broad",
+        "count": 36
+      },
+      {
+        "value": "one",
+        "count": 35
+      },
+      {
+        "value": "a piece of",
+        "count": 35
+      },
+      {
+        "value": "eight",
+        "count": 35
+      },
+      {
+        "value": "triangular",
+        "count": 33
+      },
+      {
+        "value": "old",
+        "count": 33
+      },
+      {
+        "value": "fan-shaped",
+        "count": 30
+      },
+      {
+        "value": "little",
+        "count": 30
+      },
+      {
+        "value": "beautiful",
+        "count": 30
+      },
+      {
+        "value": "dark",
+        "count": 29
+      },
+      {
+        "value": "busy",
+        "count": 28
+      },
+      {
+        "value": "center",
+        "count": 28
+      },
+      {
+        "value": "very beautiful",
+        "count": 28
+      },
+      {
+        "value": "a row of",
+        "count": 27
+      },
+      {
+        "value": "numerous",
+        "count": 24
+      },
+      {
+        "value": "seven",
+        "count": 24
+      },
+      {
+        "value": "dark gray",
+        "count": 24
+      },
+      {
+        "value": "almost rectangular",
+        "count": 24
+      },
+      {
+        "value": "together",
+        "count": 23
+      },
+      {
+        "value": "peaceful",
+        "count": 23
+      },
+      {
+        "value": "orange",
+        "count": 23
+      },
+      {
+        "value": "two rows of",
+        "count": 22
+      },
+      {
+        "value": "multiple",
+        "count": 22
+      },
+      {
+        "value": "present",
+        "count": 22
+      },
+      {
+        "value": "bald",
+        "count": 22
+      },
+      {
+        "value": "colorful",
+        "count": 21
+      },
+      {
+        "value": "short",
+        "count": 21
+      },
+      {
+        "value": "several pieces of",
+        "count": 21
+      },
+      {
+        "value": "complicated",
+        "count": 20
+      },
+      {
+        "value": "neatly arranged",
+        "count": 20
+      },
+      {
+        "value": "different colors",
+        "count": 20
+      },
+      {
+        "value": "dark blue",
+        "count": 20
+      },
+      {
+        "value": "rows",
+        "count": 19
+      },
+      {
+        "value": "polygonal",
+        "count": 19
+      },
+      {
+        "value": "very broad",
+        "count": 19
+      },
+      {
+        "value": "prosperous",
+        "count": 19
+      },
+      {
+        "value": "crossed",
+        "count": 19
+      }
+    ],
+    "top_type_value_pairs": [
+      {
+        "type": "color",
+        "value": "green",
+        "count": 3804
+      },
+      {
+        "type": "count",
+        "value": "many",
+        "count": 3498
+      },
+      {
+        "type": "count",
+        "value": "some",
+        "count": 2005
+      },
+      {
+        "type": "count",
+        "value": "several",
+        "count": 1577
+      },
+      {
+        "type": "count",
+        "value": "two",
+        "count": 1214
+      },
+      {
+        "type": "color",
+        "value": "white",
+        "count": 798
+      },
+      {
+        "type": "size",
+        "value": "large",
+        "count": 765
+      },
+      {
+        "type": "count",
+        "value": "three",
+        "count": 412
+      },
+      {
+        "type": "size",
+        "value": "small",
+        "count": 322
+      },
+      {
+        "type": "color",
+        "value": "yellow",
+        "count": 312
+      },
+      {
+        "type": "color",
+        "value": "red",
+        "count": 299
+      },
+      {
+        "type": "state",
+        "value": "parked",
+        "count": 283
+      },
+      {
+        "type": "count",
+        "value": "four",
+        "count": 255
+      },
+      {
+        "type": "shape",
+        "value": "curved",
+        "count": 231
+      },
+      {
+        "type": "count",
+        "value": "a lot of",
+        "count": 216
+      },
+      {
+        "type": "size",
+        "value": "long",
+        "count": 211
+      },
+      {
+        "type": "color",
+        "value": "blue",
+        "count": 207
+      },
+      {
+        "type": "shape",
+        "value": "irregular",
+        "count": 201
+      },
+      {
+        "type": "density",
+        "value": "dense",
+        "count": 197
+      },
+      {
+        "type": "color",
+        "value": "gray",
+        "count": 181
+      },
+      {
+        "type": "size",
+        "value": "tall",
+        "count": 179
+      },
+      {
+        "type": "color",
+        "value": "grey",
+        "count": 159
+      },
+      {
+        "type": "color",
+        "value": "dark green",
+        "count": 158
+      },
+      {
+        "type": "shape",
+        "value": "rectangular",
+        "count": 150
+      },
+      {
+        "type": "color",
+        "value": "brown",
+        "count": 141
+      },
+      {
+        "type": "size",
+        "value": "big",
+        "count": 132
+      },
+      {
+        "type": "color",
+        "value": "black",
+        "count": 127
+      },
+      {
+        "type": "count",
+        "value": "a large number of",
+        "count": 121
+      },
+      {
+        "type": "shape",
+        "value": "straight",
+        "count": 112
+      },
+      {
+        "type": "density",
+        "value": "sparse",
+        "count": 100
+      },
+      {
+        "type": "shape",
+        "value": "oval",
+        "count": 96
+      },
+      {
+        "type": "size",
+        "value": "wide",
+        "count": 88
+      },
+      {
+        "type": "shape",
+        "value": "square",
+        "count": 87
+      },
+      {
+        "type": "count",
+        "value": "a few",
+        "count": 82
+      },
+      {
+        "type": "presence",
+        "value": "absent",
+        "count": 81
+      },
+      {
+        "type": "position",
+        "value": "in the middle",
+        "count": 79
+      },
+      {
+        "type": "density",
+        "value": "lush",
+        "count": 79
+      },
+      {
+        "type": "size",
+        "value": "huge",
+        "count": 78
+      },
+      {
+        "type": "shape",
+        "value": "round",
+        "count": 76
+      },
+      {
+        "type": "color",
+        "value": "khaki",
+        "count": 74
+      },
+      {
+        "type": "state",
+        "value": "bare",
+        "count": 74
+      },
+      {
+        "type": "size",
+        "value": "vast",
+        "count": 71
+      },
+      {
+        "type": "orientation",
+        "value": "parallel",
+        "count": 68
+      },
+      {
+        "type": "count",
+        "value": "six",
+        "count": 67
+      },
+      {
+        "type": "count",
+        "value": "many pieces of",
+        "count": 64
+      },
+      {
+        "type": "shape",
+        "value": "circle",
+        "count": 58
+      },
+      {
+        "type": "shape",
+        "value": "circular",
+        "count": 55
+      },
+      {
+        "type": "state",
+        "value": "empty",
+        "count": 53
+      },
+      {
+        "type": "other",
+        "value": "bare",
+        "count": 52
+      },
+      {
+        "type": "size",
+        "value": "medium",
+        "count": 50
+      },
+      {
+        "type": "size",
+        "value": "narrow",
+        "count": 47
+      },
+      {
+        "type": "count",
+        "value": "five",
+        "count": 45
+      },
+      {
+        "type": "other",
+        "value": "lush",
+        "count": 41
+      },
+      {
+        "type": "count",
+        "value": "lots of",
+        "count": 40
+      },
+      {
+        "type": "state",
+        "value": "running",
+        "count": 40
+      },
+      {
+        "type": "shape",
+        "value": "rectangle",
+        "count": 40
+      },
+      {
+        "type": "state",
+        "value": "orderly",
+        "count": 39
+      },
+      {
+        "type": "color",
+        "value": "light green",
+        "count": 38
+      },
+      {
+        "type": "other",
+        "value": "orderly",
+        "count": 38
+      },
+      {
+        "type": "other",
+        "value": "different",
+        "count": 37
+      },
+      {
+        "type": "size",
+        "value": "broad",
+        "count": 36
+      },
+      {
+        "type": "count",
+        "value": "one",
+        "count": 35
+      },
+      {
+        "type": "state",
+        "value": "bustling",
+        "count": 35
+      },
+      {
+        "type": "count",
+        "value": "eight",
+        "count": 35
+      },
+      {
+        "type": "count",
+        "value": "a piece of",
+        "count": 34
+      },
+      {
+        "type": "shape",
+        "value": "triangular",
+        "count": 33
+      },
+      {
+        "type": "size",
+        "value": "piece of",
+        "count": 32
+      },
+      {
+        "type": "shape",
+        "value": "fan-shaped",
+        "count": 30
+      },
+      {
+        "type": "other",
+        "value": "beautiful",
+        "count": 30
+      },
+      {
+        "type": "color",
+        "value": "dark",
+        "count": 29
+      },
+      {
+        "type": "position",
+        "value": "center",
+        "count": 28
+      },
+      {
+        "type": "size",
+        "value": "different sizes",
+        "count": 28
+      },
+      {
+        "type": "other",
+        "value": "very beautiful",
+        "count": 28
+      },
+      {
+        "type": "count",
+        "value": "a row of",
+        "count": 27
+      },
+      {
+        "type": "count",
+        "value": "rows of",
+        "count": 27
+      },
+      {
+        "type": "state",
+        "value": "busy",
+        "count": 26
+      },
+      {
+        "type": "size",
+        "value": "little",
+        "count": 26
+      },
+      {
+        "type": "count",
+        "value": "numerous",
+        "count": 24
+      },
+      {
+        "type": "state",
+        "value": "scattered",
+        "count": 24
+      },
+      {
+        "type": "count",
+        "value": "seven",
+        "count": 24
+      },
+      {
+        "type": "color",
+        "value": "dark gray",
+        "count": 24
+      },
+      {
+        "type": "state",
+        "value": "crowded",
+        "count": 24
+      },
+      {
+        "type": "shape",
+        "value": "almost rectangular",
+        "count": 24
+      },
+      {
+        "type": "other",
+        "value": "old",
+        "count": 23
+      },
+      {
+        "type": "color",
+        "value": "orange",
+        "count": 23
+      },
+      {
+        "type": "count",
+        "value": "two rows of",
+        "count": 22
+      },
+      {
+        "type": "count",
+        "value": "multiple",
+        "count": 22
+      },
+      {
+        "type": "other",
+        "value": "peaceful",
+        "count": 22
+      },
+      {
+        "type": "presence",
+        "value": "present",
+        "count": 22
+      },
+      {
+        "type": "color",
+        "value": "colorful",
+        "count": 21
+      },
+      {
+        "type": "size",
+        "value": "short",
+        "count": 21
+      },
+      {
+        "type": "count",
+        "value": "several pieces of",
+        "count": 21
+      },
+      {
+        "type": "position",
+        "value": "together",
+        "count": 20
+      },
+      {
+        "type": "other",
+        "value": "complicated",
+        "count": 20
+      },
+      {
+        "type": "color",
+        "value": "dark blue",
+        "count": 20
+      },
+      {
+        "type": "other",
+        "value": "different sizes",
+        "count": 19
+      },
+      {
+        "type": "shape",
+        "value": "polygonal",
+        "count": 19
+      },
+      {
+        "type": "size",
+        "value": "very broad",
+        "count": 19
+      },
+      {
+        "type": "color",
+        "value": "light brown",
+        "count": 18
+      },
+      {
+        "type": "other",
+        "value": "bald",
+        "count": 18
+      }
+    ]
+  },
+  "relations": {
+    "total": 18333,
+    "unique_predicates": 807,
+    "singleton_predicates": 443,
+    "singleton_ratio_percent": 54.8947,
+    "avg_per_caption": 1.490973,
+    "captions_with_relations": 10808,
+    "zero_relation_captions": 1488,
+    "coverage_percent": 87.8985,
+    "per_caption_distribution": {
+      "count": 12296,
+      "mean": 1.490973,
+      "min": 0,
+      "max": 8,
+      "histogram": {
+        "0": 1488,
+        "1": 5444,
+        "2": 3731,
+        "3": 1220,
+        "4": 331,
+        "5": 60,
+        "6": 15,
+        "7": 3,
+        "8": 4
+      }
+    },
+    "samples_with_repeated_predicate": 3346,
+    "predicate_frequency": [
+      {
+        "predicate": "near",
+        "count": 2680
+      },
+      {
+        "predicate": "in",
+        "count": 2591
+      },
+      {
+        "predicate": "surrounded_by",
+        "count": 1949
+      },
+      {
+        "predicate": "around",
+        "count": 1845
+      },
+      {
+        "predicate": "on",
+        "count": 1050
+      },
+      {
+        "predicate": "next_to",
+        "count": 1022
+      },
+      {
+        "predicate": "on_both_sides_of",
+        "count": 779
+      },
+      {
+        "predicate": "inside",
+        "count": 568
+      },
+      {
+        "predicate": "between",
+        "count": 431
+      },
+      {
+        "predicate": "with",
+        "count": 369
+      },
+      {
+        "predicate": "beside",
+        "count": 286
+      },
+      {
+        "predicate": "over",
+        "count": 175
+      },
+      {
+        "predicate": "of",
+        "count": 136
+      },
+      {
+        "predicate": "in_the_middle_of",
+        "count": 104
+      },
+      {
+        "predicate": "on_one_side_of",
+        "count": 102
+      },
+      {
+        "predicate": "across",
+        "count": 102
+      },
+      {
+        "predicate": "in_two_sides_of",
+        "count": 98
+      },
+      {
+        "predicate": "semisurrounded_by",
+        "count": 96
+      },
+      {
+        "predicate": "nearby",
+        "count": 96
+      },
+      {
+        "predicate": "near_to",
+        "count": 93
+      },
+      {
+        "predicate": "besides",
+        "count": 86
+      },
+      {
+        "predicate": "made_up_of",
+        "count": 74
+      },
+      {
+        "predicate": "separated_by",
+        "count": 73
+      },
+      {
+        "predicate": "surround",
+        "count": 72
+      },
+      {
+        "predicate": "in_front_of",
+        "count": 71
+      },
+      {
+        "predicate": "at",
+        "count": 67
+      },
+      {
+        "predicate": "includes",
+        "count": 62
+      },
+      {
+        "predicate": "among",
+        "count": 58
+      },
+      {
+        "predicate": "semi_surrounded_by",
+        "count": 57
+      },
+      {
+        "predicate": "alongside",
+        "count": 57
+      },
+      {
+        "predicate": "surrounds",
+        "count": 56
+      },
+      {
+        "predicate": "close_to",
+        "count": 56
+      },
+      {
+        "predicate": "located_in",
+        "count": 56
+      },
+      {
+        "predicate": "has",
+        "count": 56
+      },
+      {
+        "predicate": "surrounded",
+        "count": 55
+      },
+      {
+        "predicate": "contains",
+        "count": 53
+      },
+      {
+        "predicate": "along",
+        "count": 52
+      },
+      {
+        "predicate": "through",
+        "count": 50
+      },
+      {
+        "predicate": "on_the_side_of",
+        "count": 40
+      },
+      {
+        "predicate": "make_up",
+        "count": 39
+      },
+      {
+        "predicate": "in_the_center_of",
+        "count": 37
+      },
+      {
+        "predicate": "aside",
+        "count": 36
+      },
+      {
+        "predicate": "separates",
+        "count": 35
+      },
+      {
+        "predicate": "consists_of",
+        "count": 32
+      },
+      {
+        "predicate": "in_one_side_of",
+        "count": 32
+      },
+      {
+        "predicate": "decorated_with",
+        "count": 31
+      },
+      {
+        "predicate": "integrated_with",
+        "count": 31
+      },
+      {
+        "predicate": "form",
+        "count": 30
+      },
+      {
+        "predicate": "covered_with",
+        "count": 28
+      },
+      {
+        "predicate": "behind",
+        "count": 27
+      },
+      {
+        "predicate": "surrounding",
+        "count": 26
+      },
+      {
+        "predicate": "contain",
+        "count": 26
+      },
+      {
+        "predicate": "is",
+        "count": 26
+      },
+      {
+        "predicate": "together_with",
+        "count": 25
+      },
+      {
+        "predicate": "connects",
+        "count": 25
+      },
+      {
+        "predicate": "connected_to",
+        "count": 25
+      },
+      {
+        "predicate": "outside",
+        "count": 25
+      },
+      {
+        "predicate": "divided_by",
+        "count": 25
+      },
+      {
+        "predicate": "by",
+        "count": 24
+      },
+      {
+        "predicate": "located_on",
+        "count": 22
+      },
+      {
+        "predicate": "include",
+        "count": 22
+      },
+      {
+        "predicate": "spans",
+        "count": 22
+      },
+      {
+        "predicate": "on_the_other_side_of",
+        "count": 21
+      },
+      {
+        "predicate": "cover",
+        "count": 20
+      },
+      {
+        "predicate": "passes_through",
+        "count": 20
+      },
+      {
+        "predicate": "flows_through",
+        "count": 20
+      },
+      {
+        "predicate": "sandwiched_between",
+        "count": 20
+      },
+      {
+        "predicate": "surroundeded_by",
+        "count": 19
+      },
+      {
+        "predicate": "beside_in",
+        "count": 19
+      },
+      {
+        "predicate": "divided_into",
+        "count": 19
+      },
+      {
+        "predicate": "surround_by",
+        "count": 18
+      },
+      {
+        "predicate": "parked_on",
+        "count": 18
+      },
+      {
+        "predicate": "passing_through",
+        "count": 18
+      },
+      {
+        "predicate": "under",
+        "count": 17
+      },
+      {
+        "predicate": "semisurrounds",
+        "count": 17
+      },
+      {
+        "predicate": "on_either_side_of",
+        "count": 16
+      },
+      {
+        "predicate": "parked_at",
+        "count": 16
+      },
+      {
+        "predicate": "are",
+        "count": 16
+      },
+      {
+        "predicate": "above",
+        "count": 15
+      },
+      {
+        "predicate": "composed_of",
+        "count": 15
+      },
+      {
+        "predicate": "at_the_corner_of",
+        "count": 15
+      },
+      {
+        "predicate": "connected",
+        "count": 15
+      },
+      {
+        "predicate": "separate",
+        "count": 13
+      },
+      {
+        "predicate": "situated_in",
+        "count": 13
+      },
+      {
+        "predicate": "lying_on",
+        "count": 13
+      },
+      {
+        "predicate": "covered_by",
+        "count": 12
+      },
+      {
+        "predicate": "parked_in",
+        "count": 12
+      },
+      {
+        "predicate": "pass_through",
+        "count": 12
+      },
+      {
+        "predicate": "like",
+        "count": 12
+      },
+      {
+        "predicate": "embraced_by",
+        "count": 12
+      },
+      {
+        "predicate": "have",
+        "count": 12
+      },
+      {
+        "predicate": "connected_by",
+        "count": 12
+      },
+      {
+        "predicate": "passing_by",
+        "count": 12
+      },
+      {
+        "predicate": "divide",
+        "count": 12
+      },
+      {
+        "predicate": "locate_in",
+        "count": 12
+      },
+      {
+        "predicate": "on_two_sides_of",
+        "count": 12
+      },
+      {
+        "predicate": "encircle",
+        "count": 12
+      },
+      {
+        "predicate": "connecting",
+        "count": 11
+      },
+      {
+        "predicate": "full_of",
+        "count": 11
+      },
+      {
+        "predicate": "in_center_of",
+        "count": 10
+      },
+      {
+        "predicate": "part_of",
+        "count": 10
+      },
+      {
+        "predicate": "traverses",
+        "count": 9
+      },
+      {
+        "predicate": "connected_with",
+        "count": 9
+      },
+      {
+        "predicate": "on_the_edge_of",
+        "count": 9
+      },
+      {
+        "predicate": "embraced",
+        "count": 9
+      },
+      {
+        "predicate": "owning",
+        "count": 9
+      },
+      {
+        "predicate": "consist_of",
+        "count": 9
+      },
+      {
+        "predicate": "in_side",
+        "count": 8
+      },
+      {
+        "predicate": "near_by",
+        "count": 8
+      },
+      {
+        "predicate": "in_the_corner_of",
+        "count": 8
+      },
+      {
+        "predicate": "on_each_side_of",
+        "count": 8
+      },
+      {
+        "predicate": "embrace",
+        "count": 8
+      },
+      {
+        "predicate": "below",
+        "count": 8
+      },
+      {
+        "predicate": "stretches_across",
+        "count": 8
+      },
+      {
+        "predicate": "planted_with",
+        "count": 8
+      },
+      {
+        "predicate": "built_on",
+        "count": 8
+      },
+      {
+        "predicate": "on_top_of",
+        "count": 8
+      },
+      {
+        "predicate": "planted_in",
+        "count": 8
+      },
+      {
+        "predicate": "on_other_side_of",
+        "count": 8
+      },
+      {
+        "predicate": "interspersed_with",
+        "count": 8
+      },
+      {
+        "predicate": "encircled_by",
+        "count": 7
+      },
+      {
+        "predicate": "scattered_in",
+        "count": 7
+      },
+      {
+        "predicate": "located_at",
+        "count": 7
+      },
+      {
+        "predicate": "crosses",
+        "count": 7
+      },
+      {
+        "predicate": "stretches_through",
+        "count": 7
+      },
+      {
+        "predicate": "has_part",
+        "count": 7
+      },
+      {
+        "predicate": "distribute_in",
+        "count": 7
+      },
+      {
+        "predicate": "enclosed_by",
+        "count": 7
+      },
+      {
+        "predicate": "lined_with",
+        "count": 7
+      },
+      {
+        "predicate": "into",
+        "count": 7
+      },
+      {
+        "predicate": "on_either_hand_of",
+        "count": 7
+      },
+      {
+        "predicate": "covered_on",
+        "count": 7
+      },
+      {
+        "predicate": "planted_on",
+        "count": 7
+      },
+      {
+        "predicate": "included_in",
+        "count": 7
+      },
+      {
+        "predicate": "stop_at",
+        "count": 6
+      },
+      {
+        "predicate": "adjacent_to",
+        "count": 6
+      },
+      {
+        "predicate": "around_with",
+        "count": 6
+      },
+      {
+        "predicate": "looks_like",
+        "count": 6
+      },
+      {
+        "predicate": "integrated_by",
+        "count": 6
+      },
+      {
+        "predicate": "rim",
+        "count": 6
+      },
+      {
+        "predicate": "semi_surrounds",
+        "count": 6
+      },
+      {
+        "predicate": "enclose",
+        "count": 6
+      },
+      {
+        "predicate": "including",
+        "count": 6
+      },
+      {
+        "predicate": "owns",
+        "count": 6
+      },
+      {
+        "predicate": "opposite_to",
+        "count": 5
+      },
+      {
+        "predicate": "overpasses",
+        "count": 5
+      },
+      {
+        "predicate": "parallel_with",
+        "count": 5
+      },
+      {
+        "predicate": "passes_by",
+        "count": 5
+      },
+      {
+        "predicate": "spanning",
+        "count": 5
+      },
+      {
+        "predicate": "cross",
+        "count": 5
+      },
+      {
+        "predicate": "divide_into",
+        "count": 5
+      },
+      {
+        "predicate": "lying_over",
+        "count": 5
+      },
+      {
+        "predicate": "in_the_top_of",
+        "count": 5
+      },
+      {
+        "predicate": "decorated_on",
+        "count": 5
+      },
+      {
+        "predicate": "not_far_away_from",
+        "count": 5
+      },
+      {
+        "predicate": "arranged_in",
+        "count": 5
+      },
+      {
+        "predicate": "separately",
+        "count": 5
+      },
+      {
+        "predicate": "grown_on",
+        "count": 5
+      },
+      {
+        "predicate": "semi_surrounded",
+        "count": 5
+      },
+      {
+        "predicate": "lying_in",
+        "count": 5
+      },
+      {
+        "predicate": "semisurround",
+        "count": 5
+      },
+      {
+        "predicate": "linked_by",
+        "count": 4
+      },
+      {
+        "predicate": "playing_on",
+        "count": 4
+      },
+      {
+        "predicate": "surrounded_with",
+        "count": 4
+      },
+      {
+        "predicate": "separating",
+        "count": 4
+      },
+      {
+        "predicate": "interspersed_in",
+        "count": 4
+      },
+      {
+        "predicate": "in_the_west_of",
+        "count": 4
+      },
+      {
+        "predicate": "separated_from",
+        "count": 4
+      },
+      {
+        "predicate": "flowing_through",
+        "count": 4
+      },
+      {
+        "predicate": "cover_part_of",
+        "count": 4
+      },
+      {
+        "predicate": "cast",
+        "count": 4
+      },
+      {
+        "predicate": "stretch_through",
+        "count": 4
+      },
+      {
+        "predicate": "bridged",
+        "count": 4
+      },
+      {
+        "predicate": "pats",
+        "count": 4
+      },
+      {
+        "predicate": "wreathed_by",
+        "count": 4
+      },
+      {
+        "predicate": "occupies",
+        "count": 4
+      },
+      {
+        "predicate": "marked_with",
+        "count": 4
+      },
+      {
+        "predicate": "covers",
+        "count": 4
+      },
+      {
+        "predicate": "connect",
+        "count": 4
+      },
+      {
+        "predicate": "decorating",
+        "count": 4
+      },
+      {
+        "predicate": "sits_alongside",
+        "count": 4
+      },
+      {
+        "predicate": "divides",
+        "count": 4
+      },
+      {
+        "predicate": "goes_through",
+        "count": 4
+      },
+      {
+        "predicate": "runs_through",
+        "count": 4
+      },
+      {
+        "predicate": "moored_on",
+        "count": 4
+      },
+      {
+        "predicate": "situated_on",
+        "count": 4
+      },
+      {
+        "predicate": "standing_on",
+        "count": 4
+      },
+      {
+        "predicate": "winds_through",
+        "count": 4
+      },
+      {
+        "predicate": "hemmed_in_by",
+        "count": 4
+      },
+      {
+        "predicate": "separated",
+        "count": 4
+      },
+      {
+        "predicate": "link",
+        "count": 4
+      },
+      {
+        "predicate": "all_around",
+        "count": 4
+      },
+      {
+        "predicate": "pass_by",
+        "count": 4
+      },
+      {
+        "predicate": "hemmed_in",
+        "count": 4
+      },
+      {
+        "predicate": "at_coner_of",
+        "count": 4
+      },
+      {
+        "predicate": "playing",
+        "count": 4
+      },
+      {
+        "predicate": "span",
+        "count": 4
+      },
+      {
+        "predicate": "around_by",
+        "count": 4
+      },
+      {
+        "predicate": "such_as",
+        "count": 4
+      },
+      {
+        "predicate": "built_along",
+        "count": 4
+      },
+      {
+        "predicate": "docking_in",
+        "count": 4
+      },
+      {
+        "predicate": "together_form",
+        "count": 4
+      },
+      {
+        "predicate": "containing",
+        "count": 4
+      },
+      {
+        "predicate": "semisurrounded_separately",
+        "count": 4
+      },
+      {
+        "predicate": "and",
+        "count": 3
+      },
+      {
+        "predicate": "grew_on",
+        "count": 3
+      },
+      {
+        "predicate": "in_the_mid_of",
+        "count": 3
+      },
+      {
+        "predicate": "at_the_edge_of",
+        "count": 3
+      },
+      {
+        "predicate": "divid",
+        "count": 3
+      },
+      {
+        "predicate": "on_the_top_of",
+        "count": 3
+      },
+      {
+        "predicate": "on_edge_of",
+        "count": 3
+      },
+      {
+        "predicate": "reaching_into",
+        "count": 3
+      },
+      {
+        "predicate": "to_dock_with",
+        "count": 3
+      },
+      {
+        "predicate": "rimmed_in_by",
+        "count": 3
+      },
+      {
+        "predicate": "across_from",
+        "count": 3
+      },
+      {
+        "predicate": "constitute",
+        "count": 3
+      },
+      {
+        "predicate": "linked_with",
+        "count": 3
+      },
+      {
+        "predicate": "decorated_by",
+        "count": 3
+      },
+      {
+        "predicate": "northwest_of",
+        "count": 3
+      },
+      {
+        "predicate": "rimmed_by",
+        "count": 3
+      },
+      {
+        "predicate": "stretch_to",
+        "count": 3
+      },
+      {
+        "predicate": "dotted_with",
+        "count": 3
+      },
+      {
+        "predicate": "stretching_across",
+        "count": 3
+      },
+      {
+        "predicate": "at_the_end_of",
+        "count": 3
+      },
+      {
+        "predicate": "against",
+        "count": 3
+      },
+      {
+        "predicate": "divided",
+        "count": 3
+      },
+      {
+        "predicate": "covered",
+        "count": 3
+      },
+      {
+        "predicate": "formed_by",
+        "count": 3
+      },
+      {
+        "predicate": "grown_in",
+        "count": 3
+      },
+      {
+        "predicate": "sits_in",
+        "count": 3
+      },
+      {
+        "predicate": "separated_as",
+        "count": 3
+      },
+      {
+        "predicate": "covering",
+        "count": 3
+      },
+      {
+        "predicate": "stands_at",
+        "count": 3
+      },
+      {
+        "predicate": "built_around",
+        "count": 3
+      },
+      {
+        "predicate": "situates_in",
+        "count": 3
+      },
+      {
+        "predicate": "to",
+        "count": 3
+      },
+      {
+        "predicate": "lying_along",
+        "count": 3
+      },
+      {
+        "predicate": "stretch_across",
+        "count": 3
+      },
+      {
+        "predicate": "encompassed_by",
+        "count": 3
+      },
+      {
+        "predicate": "on_bank_of",
+        "count": 3
+      },
+      {
+        "predicate": "divids",
+        "count": 3
+      },
+      {
+        "predicate": "devided_by",
+        "count": 3
+      },
+      {
+        "predicate": "links",
+        "count": 3
+      },
+      {
+        "predicate": "make_up_of",
+        "count": 3
+      },
+      {
+        "predicate": "stop_in",
+        "count": 3
+      },
+      {
+        "predicate": "makes",
+        "count": 3
+      },
+      {
+        "predicate": "is_in",
+        "count": 3
+      },
+      {
+        "predicate": "sit_in",
+        "count": 3
+      },
+      {
+        "predicate": "while",
+        "count": 2
+      },
+      {
+        "predicate": "crosses_over",
+        "count": 2
+      },
+      {
+        "predicate": "has_kinds_of",
+        "count": 2
+      },
+      {
+        "predicate": "encircles",
+        "count": 2
+      },
+      {
+        "predicate": "in_half_of",
+        "count": 2
+      },
+      {
+        "predicate": "acrosses",
+        "count": 2
+      },
+      {
+        "predicate": "girdled_with",
+        "count": 2
+      },
+      {
+        "predicate": "in_the_northeast_of",
+        "count": 2
+      },
+      {
+        "predicate": "near_next_to",
+        "count": 2
+      },
+      {
+        "predicate": "not_far_from",
+        "count": 2
+      },
+      {
+        "predicate": "flowing_over",
+        "count": 2
+      },
+      {
+        "predicate": "in_above",
+        "count": 2
+      },
+      {
+        "predicate": "located_in_the_middle_of",
+        "count": 2
+      },
+      {
+        "predicate": "semi_closed_by",
+        "count": 2
+      },
+      {
+        "predicate": "on_its_heart",
+        "count": 2
+      },
+      {
+        "predicate": "parked_around",
+        "count": 2
+      },
+      {
+        "predicate": "equipped_with",
+        "count": 2
+      },
+      {
+        "predicate": "located_along",
+        "count": 2
+      },
+      {
+        "predicate": "beat",
+        "count": 2
+      },
+      {
+        "predicate": "lie_in",
+        "count": 2
+      },
+      {
+        "predicate": "wreathed_in",
+        "count": 2
+      },
+      {
+        "predicate": "in_a_distance_from",
+        "count": 2
+      },
+      {
+        "predicate": "patting",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_left_hand_of",
+        "count": 2
+      },
+      {
+        "predicate": "combined_with",
+        "count": 2
+      },
+      {
+        "predicate": "bext_to",
+        "count": 2
+      },
+      {
+        "predicate": "locates_in",
+        "count": 2
+      },
+      {
+        "predicate": "consisting_of",
+        "count": 2
+      },
+      {
+        "predicate": "at_both_ends_of",
+        "count": 2
+      },
+      {
+        "predicate": "built_in",
+        "count": 2
+      },
+      {
+        "predicate": "stained_with",
+        "count": 2
+      },
+      {
+        "predicate": "pass_across",
+        "count": 2
+      },
+      {
+        "predicate": "embraced_with",
+        "count": 2
+      },
+      {
+        "predicate": "in_middle_of",
+        "count": 2
+      },
+      {
+        "predicate": "mainly_includes",
+        "count": 2
+      },
+      {
+        "predicate": "filled_with",
+        "count": 2
+      },
+      {
+        "predicate": "situated_in_the_center_of",
+        "count": 2
+      },
+      {
+        "predicate": "perches_near",
+        "count": 2
+      },
+      {
+        "predicate": "opposite",
+        "count": 2
+      },
+      {
+        "predicate": "pours_into",
+        "count": 2
+      },
+      {
+        "predicate": "casting",
+        "count": 2
+      },
+      {
+        "predicate": "distributed_on",
+        "count": 2
+      },
+      {
+        "predicate": "situated_inside",
+        "count": 2
+      },
+      {
+        "predicate": "passing_over",
+        "count": 2
+      },
+      {
+        "predicate": "traverses_across",
+        "count": 2
+      },
+      {
+        "predicate": "set_off_with",
+        "count": 2
+      },
+      {
+        "predicate": "joins",
+        "count": 2
+      },
+      {
+        "predicate": "lying_among",
+        "count": 2
+      },
+      {
+        "predicate": "down",
+        "count": 2
+      },
+      {
+        "predicate": "embraces",
+        "count": 2
+      },
+      {
+        "predicate": "at_roadside_of",
+        "count": 2
+      },
+      {
+        "predicate": "standing_closely_to",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_right_side_of",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_other_hand",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_left_side_of",
+        "count": 2
+      },
+      {
+        "predicate": "on_both_side_of",
+        "count": 2
+      },
+      {
+        "predicate": "docked_on",
+        "count": 2
+      },
+      {
+        "predicate": "lapping",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_bank_of",
+        "count": 2
+      },
+      {
+        "predicate": "surrounded_in",
+        "count": 2
+      },
+      {
+        "predicate": "lined_along",
+        "count": 2
+      },
+      {
+        "predicate": "intersects",
+        "count": 2
+      },
+      {
+        "predicate": "decorate",
+        "count": 2
+      },
+      {
+        "predicate": "grow",
+        "count": 2
+      },
+      {
+        "predicate": "at_ends_of",
+        "count": 2
+      },
+      {
+        "predicate": "seated_near",
+        "count": 2
+      },
+      {
+        "predicate": "voer",
+        "count": 2
+      },
+      {
+        "predicate": "shrouded_in",
+        "count": 2
+      },
+      {
+        "predicate": "are_in",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_periphery_of",
+        "count": 2
+      },
+      {
+        "predicate": "dividing",
+        "count": 2
+      },
+      {
+        "predicate": "smaller_than",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_right_hand_of",
+        "count": 2
+      },
+      {
+        "predicate": "neightbouring_with",
+        "count": 2
+      },
+      {
+        "predicate": "growing_on",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_south_of",
+        "count": 2
+      },
+      {
+        "predicate": "winding_through",
+        "count": 2
+      },
+      {
+        "predicate": "accessed_to_by",
+        "count": 2
+      },
+      {
+        "predicate": "for",
+        "count": 2
+      },
+      {
+        "predicate": "out_of",
+        "count": 2
+      },
+      {
+        "predicate": "docked_at",
+        "count": 2
+      },
+      {
+        "predicate": "link_to",
+        "count": 2
+      },
+      {
+        "predicate": "in_diagonal_positions_of",
+        "count": 2
+      },
+      {
+        "predicate": "can_be_seen_several",
+        "count": 2
+      },
+      {
+        "predicate": "enclosed",
+        "count": 2
+      },
+      {
+        "predicate": "scattered_on",
+        "count": 2
+      },
+      {
+        "predicate": "from",
+        "count": 2
+      },
+      {
+        "predicate": "semi_surround",
+        "count": 2
+      },
+      {
+        "predicate": "casting_shadow_on",
+        "count": 2
+      },
+      {
+        "predicate": "situated_around",
+        "count": 2
+      },
+      {
+        "predicate": "at_the_coner_of",
+        "count": 2
+      },
+      {
+        "predicate": "forms",
+        "count": 2
+      },
+      {
+        "predicate": "locate_in_the_mid_of",
+        "count": 2
+      },
+      {
+        "predicate": "wreathed_with",
+        "count": 2
+      },
+      {
+        "predicate": "slapping",
+        "count": 2
+      },
+      {
+        "predicate": "scattered_with",
+        "count": 2
+      },
+      {
+        "predicate": "stand_aside",
+        "count": 2
+      },
+      {
+        "predicate": "connects_between",
+        "count": 2
+      },
+      {
+        "predicate": "surroundededed_by",
+        "count": 2
+      },
+      {
+        "predicate": "makes_up",
+        "count": 2
+      },
+      {
+        "predicate": "crossing",
+        "count": 2
+      },
+      {
+        "predicate": "stuffed_full_of",
+        "count": 2
+      },
+      {
+        "predicate": "devides",
+        "count": 2
+      },
+      {
+        "predicate": "on_opposite_side_of",
+        "count": 2
+      },
+      {
+        "predicate": "washes",
+        "count": 2
+      },
+      {
+        "predicate": "stand",
+        "count": 2
+      },
+      {
+        "predicate": "hedged_in_by",
+        "count": 2
+      },
+      {
+        "predicate": "divided_into_several_parts_by",
+        "count": 2
+      },
+      {
+        "predicate": "on_the_banks_of",
+        "count": 2
+      },
+      {
+        "predicate": "parking_on",
+        "count": 2
+      },
+      {
+        "predicate": "some",
+        "count": 2
+      },
+      {
+        "predicate": "in_the_south",
+        "count": 2
+      },
+      {
+        "predicate": "betweeen",
+        "count": 2
+      },
+      {
+        "predicate": "segmented_by",
+        "count": 2
+      },
+      {
+        "predicate": "come_up_with",
+        "count": 2
+      },
+      {
+        "predicate": "is_part_of",
+        "count": 2
+      },
+      {
+        "predicate": "locate_on_the_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "locate_on",
+        "count": 1
+      },
+      {
+        "predicate": "parking_outside",
+        "count": 1
+      },
+      {
+        "predicate": "running_in",
+        "count": 1
+      },
+      {
+        "predicate": "filling",
+        "count": 1
+      },
+      {
+        "predicate": "located_in_center_of",
+        "count": 1
+      },
+      {
+        "predicate": "nestled_in",
+        "count": 1
+      },
+      {
+        "predicate": "stretched_to",
+        "count": 1
+      },
+      {
+        "predicate": "steering_towards",
+        "count": 1
+      },
+      {
+        "predicate": "located_against",
+        "count": 1
+      },
+      {
+        "predicate": "closely",
+        "count": 1
+      },
+      {
+        "predicate": "over_against_to",
+        "count": 1
+      },
+      {
+        "predicate": "in the center of",
+        "count": 1
+      },
+      {
+        "predicate": "set_off",
+        "count": 1
+      },
+      {
+        "predicate": "put_off_from",
+        "count": 1
+      },
+      {
+        "predicate": "is_a_piece_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_northwest_of",
+        "count": 1
+      },
+      {
+        "predicate": "passes_through_aside",
+        "count": 1
+      },
+      {
+        "predicate": "sandwiched_in_the_middle_of",
+        "count": 1
+      },
+      {
+        "predicate": "parked_next_to",
+        "count": 1
+      },
+      {
+        "predicate": "staying_on",
+        "count": 1
+      },
+      {
+        "predicate": "painted_with",
+        "count": 1
+      },
+      {
+        "predicate": "shaped_as",
+        "count": 1
+      },
+      {
+        "predicate": "for_rest_and_take_a_walk_in",
+        "count": 1
+      },
+      {
+        "predicate": "distributes_in",
+        "count": 1
+      },
+      {
+        "predicate": "have_no",
+        "count": 1
+      },
+      {
+        "predicate": "flow_down",
+        "count": 1
+      },
+      {
+        "predicate": "offers_convenience_to",
+        "count": 1
+      },
+      {
+        "predicate": "moored_next_to",
+        "count": 1
+      },
+      {
+        "predicate": "speared_out",
+        "count": 1
+      },
+      {
+        "predicate": "separated_with",
+        "count": 1
+      },
+      {
+        "predicate": "on_one_ends_of",
+        "count": 1
+      },
+      {
+        "predicate": "provides_convenience_for",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_curved_position_of",
+        "count": 1
+      },
+      {
+        "predicate": "float_on",
+        "count": 1
+      },
+      {
+        "predicate": "decorated",
+        "count": 1
+      },
+      {
+        "predicate": "at_angle_of",
+        "count": 1
+      },
+      {
+        "predicate": "spell",
+        "count": 1
+      },
+      {
+        "predicate": "wreathed",
+        "count": 1
+      },
+      {
+        "predicate": "parked",
+        "count": 1
+      },
+      {
+        "predicate": "bending_to_form",
+        "count": 1
+      },
+      {
+        "predicate": "makes_sharp_contrast_with",
+        "count": 1
+      },
+      {
+        "predicate": "come_to",
+        "count": 1
+      },
+      {
+        "predicate": "reach_into",
+        "count": 1
+      },
+      {
+        "predicate": "start_from",
+        "count": 1
+      },
+      {
+        "predicate": "owned_by",
+        "count": 1
+      },
+      {
+        "predicate": "has_printed_text_from",
+        "count": 1
+      },
+      {
+        "predicate": "travel_in",
+        "count": 1
+      },
+      {
+        "predicate": "crossing_diagonally",
+        "count": 1
+      },
+      {
+        "predicate": "cut_into_different_parts",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_middle",
+        "count": 1
+      },
+      {
+        "predicate": "divide_into_six_section_by",
+        "count": 1
+      },
+      {
+        "predicate": "flow_through",
+        "count": 1
+      },
+      {
+        "predicate": "unable_to_see",
+        "count": 1
+      },
+      {
+        "predicate": "slapped_against",
+        "count": 1
+      },
+      {
+        "predicate": "flowing_around",
+        "count": 1
+      },
+      {
+        "predicate": "settled_in",
+        "count": 1
+      },
+      {
+        "predicate": "sprouting_from",
+        "count": 1
+      },
+      {
+        "predicate": "nexting_to",
+        "count": 1
+      },
+      {
+        "predicate": "past",
+        "count": 1
+      },
+      {
+        "predicate": "scattered_around",
+        "count": 1
+      },
+      {
+        "predicate": "roll_up",
+        "count": 1
+      },
+      {
+        "predicate": "is_the_center_of",
+        "count": 1
+      },
+      {
+        "predicate": "caught_in",
+        "count": 1
+      },
+      {
+        "predicate": "adjoins",
+        "count": 1
+      },
+      {
+        "predicate": "during",
+        "count": 1
+      },
+      {
+        "predicate": "arounded",
+        "count": 1
+      },
+      {
+        "predicate": "docked_against",
+        "count": 1
+      },
+      {
+        "predicate": "partly_covered_at",
+        "count": 1
+      },
+      {
+        "predicate": "sitting_by",
+        "count": 1
+      },
+      {
+        "predicate": "stretches_from",
+        "count": 1
+      },
+      {
+        "predicate": "connects_the_two_sides_of",
+        "count": 1
+      },
+      {
+        "predicate": "passed_over",
+        "count": 1
+      },
+      {
+        "predicate": "arranged_with",
+        "count": 1
+      },
+      {
+        "predicate": "hidden_in",
+        "count": 1
+      },
+      {
+        "predicate": "in_x_shape_of",
+        "count": 1
+      },
+      {
+        "predicate": "at_the_foot_of",
+        "count": 1
+      },
+      {
+        "predicate": "houses",
+        "count": 1
+      },
+      {
+        "predicate": "sit_at",
+        "count": 1
+      },
+      {
+        "predicate": "appear_the_northeast",
+        "count": 1
+      },
+      {
+        "predicate": "distributed_across_the_banks_of",
+        "count": 1
+      },
+      {
+        "predicate": "torn_up_by",
+        "count": 1
+      },
+      {
+        "predicate": "join",
+        "count": 1
+      },
+      {
+        "predicate": "onto",
+        "count": 1
+      },
+      {
+        "predicate": "consist",
+        "count": 1
+      },
+      {
+        "predicate": "located_in_the_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "overpassed_by",
+        "count": 1
+      },
+      {
+        "predicate": "parked_near",
+        "count": 1
+      },
+      {
+        "predicate": "punctuated_with",
+        "count": 1
+      },
+      {
+        "predicate": "moored_at",
+        "count": 1
+      },
+      {
+        "predicate": "nextto",
+        "count": 1
+      },
+      {
+        "predicate": "shining_on",
+        "count": 1
+      },
+      {
+        "predicate": "was",
+        "count": 1
+      },
+      {
+        "predicate": "quite_closely_to",
+        "count": 1
+      },
+      {
+        "predicate": "stretch_on",
+        "count": 1
+      },
+      {
+        "predicate": "on_its_bank",
+        "count": 1
+      },
+      {
+        "predicate": "traverses_through",
+        "count": 1
+      },
+      {
+        "predicate": "stops",
+        "count": 1
+      },
+      {
+        "predicate": "wind_through",
+        "count": 1
+      },
+      {
+        "predicate": "by_the_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "depends_on",
+        "count": 1
+      },
+      {
+        "predicate": "hiding",
+        "count": 1
+      },
+      {
+        "predicate": "driven_on",
+        "count": 1
+      },
+      {
+        "predicate": "flowing_into",
+        "count": 1
+      },
+      {
+        "predicate": "standing_in",
+        "count": 1
+      },
+      {
+        "predicate": "decorates",
+        "count": 1
+      },
+      {
+        "predicate": "surrounds_as_a_circle_in",
+        "count": 1
+      },
+      {
+        "predicate": "hem",
+        "count": 1
+      },
+      {
+        "predicate": "accompanying_by",
+        "count": 1
+      },
+      {
+        "predicate": "parked_beside",
+        "count": 1
+      },
+      {
+        "predicate": "coming_to",
+        "count": 1
+      },
+      {
+        "predicate": "belong_to",
+        "count": 1
+      },
+      {
+        "predicate": "occupied_with",
+        "count": 1
+      },
+      {
+        "predicate": "overpassing",
+        "count": 1
+      },
+      {
+        "predicate": "far_from",
+        "count": 1
+      },
+      {
+        "predicate": "divided_into_by",
+        "count": 1
+      },
+      {
+        "predicate": "living_nearby",
+        "count": 1
+      },
+      {
+        "predicate": "locate_in_the_southwest_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_bottom_of",
+        "count": 1
+      },
+      {
+        "predicate": "divided_into_several_pieces_by",
+        "count": 1
+      },
+      {
+        "predicate": "is_center_of",
+        "count": 1
+      },
+      {
+        "predicate": "lying_across",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_distance_from",
+        "count": 1
+      },
+      {
+        "predicate": "stretcj_across",
+        "count": 1
+      },
+      {
+        "predicate": "stop_here",
+        "count": 1
+      },
+      {
+        "predicate": "basking_in",
+        "count": 1
+      },
+      {
+        "predicate": "stretch_from",
+        "count": 1
+      },
+      {
+        "predicate": "in_one_corner_of",
+        "count": 1
+      },
+      {
+        "predicate": "cover_most_part_of",
+        "count": 1
+      },
+      {
+        "predicate": "cover_mostly_of",
+        "count": 1
+      },
+      {
+        "predicate": "only_one_road_away_from",
+        "count": 1
+      },
+      {
+        "predicate": "in_a_corner",
+        "count": 1
+      },
+      {
+        "predicate": "protected_with",
+        "count": 1
+      },
+      {
+        "predicate": "park_at",
+        "count": 1
+      },
+      {
+        "predicate": "invading",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_crossed_position_of",
+        "count": 1
+      },
+      {
+        "predicate": "shrouds",
+        "count": 1
+      },
+      {
+        "predicate": "grow_out_of",
+        "count": 1
+      },
+      {
+        "predicate": "nourished_by",
+        "count": 1
+      },
+      {
+        "predicate": "sheltered",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_other_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "swash_against",
+        "count": 1
+      },
+      {
+        "predicate": "send_up",
+        "count": 1
+      },
+      {
+        "predicate": "painted_on",
+        "count": 1
+      },
+      {
+        "predicate": "sitting_in",
+        "count": 1
+      },
+      {
+        "predicate": "flows_across",
+        "count": 1
+      },
+      {
+        "predicate": "rolled_up",
+        "count": 1
+      },
+      {
+        "predicate": "overlooks",
+        "count": 1
+      },
+      {
+        "predicate": "stretching_out",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_northwest_of",
+        "count": 1
+      },
+      {
+        "predicate": "on_its_roadsides_of",
+        "count": 1
+      },
+      {
+        "predicate": "distribute_on_the_either_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "set_in_towards",
+        "count": 1
+      },
+      {
+        "predicate": "surf",
+        "count": 1
+      },
+      {
+        "predicate": "located_aisde",
+        "count": 1
+      },
+      {
+        "predicate": "running_into",
+        "count": 1
+      },
+      {
+        "predicate": "not_at_positions",
+        "count": 1
+      },
+      {
+        "predicate": "growing_along",
+        "count": 1
+      },
+      {
+        "predicate": "forming",
+        "count": 1
+      },
+      {
+        "predicate": "has_become",
+        "count": 1
+      },
+      {
+        "predicate": "more_expensive_than",
+        "count": 1
+      },
+      {
+        "predicate": "surfs",
+        "count": 1
+      },
+      {
+        "predicate": "meets",
+        "count": 1
+      },
+      {
+        "predicate": "accompanyed_by",
+        "count": 1
+      },
+      {
+        "predicate": "submerged",
+        "count": 1
+      },
+      {
+        "predicate": "converging_to",
+        "count": 1
+      },
+      {
+        "predicate": "stopping_in",
+        "count": 1
+      },
+      {
+        "predicate": "seated_alongside",
+        "count": 1
+      },
+      {
+        "predicate": "lies",
+        "count": 1
+      },
+      {
+        "predicate": "suttounded_by",
+        "count": 1
+      },
+      {
+        "predicate": "run_down",
+        "count": 1
+      },
+      {
+        "predicate": "built_among",
+        "count": 1
+      },
+      {
+        "predicate": "walking_on",
+        "count": 1
+      },
+      {
+        "predicate": "has_branches",
+        "count": 1
+      },
+      {
+        "predicate": "blows",
+        "count": 1
+      },
+      {
+        "predicate": "at_the_bottom_of",
+        "count": 1
+      },
+      {
+        "predicate": "intersperses_in",
+        "count": 1
+      },
+      {
+        "predicate": "on_other_hand_of",
+        "count": 1
+      },
+      {
+        "predicate": "blocked_by",
+        "count": 1
+      },
+      {
+        "predicate": "has_shallow",
+        "count": 1
+      },
+      {
+        "predicate": "locate_in_southeast_of",
+        "count": 1
+      },
+      {
+        "predicate": "enclosed_with",
+        "count": 1
+      },
+      {
+        "predicate": "has_built",
+        "count": 1
+      },
+      {
+        "predicate": "set_up_on",
+        "count": 1
+      },
+      {
+        "predicate": "not_parralleled_with",
+        "count": 1
+      },
+      {
+        "predicate": "vertical_to",
+        "count": 1
+      },
+      {
+        "predicate": "surroundeded",
+        "count": 1
+      },
+      {
+        "predicate": "deep_in",
+        "count": 1
+      },
+      {
+        "predicate": "each",
+        "count": 1
+      },
+      {
+        "predicate": "going_under",
+        "count": 1
+      },
+      {
+        "predicate": "are_meadow_a_beach",
+        "count": 1
+      },
+      {
+        "predicate": "on_two_ends_of",
+        "count": 1
+      },
+      {
+        "predicate": "look_like",
+        "count": 1
+      },
+      {
+        "predicate": "creates",
+        "count": 1
+      },
+      {
+        "predicate": "surround_both_sides_of",
+        "count": 1
+      },
+      {
+        "predicate": "on_its_side",
+        "count": 1
+      },
+      {
+        "predicate": "back_to",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_north_of",
+        "count": 1
+      },
+      {
+        "predicate": "blow_against",
+        "count": 1
+      },
+      {
+        "predicate": "shocked_heavily_by",
+        "count": 1
+      },
+      {
+        "predicate": "leading_to",
+        "count": 1
+      },
+      {
+        "predicate": "passed_under",
+        "count": 1
+      },
+      {
+        "predicate": "opened",
+        "count": 1
+      },
+      {
+        "predicate": "flow_in",
+        "count": 1
+      },
+      {
+        "predicate": "pass_over",
+        "count": 1
+      },
+      {
+        "predicate": "on_banks_of",
+        "count": 1
+      },
+      {
+        "predicate": "sorrounding",
+        "count": 1
+      },
+      {
+        "predicate": "filled",
+        "count": 1
+      },
+      {
+        "predicate": "provide",
+        "count": 1
+      },
+      {
+        "predicate": "overshadowed",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_shadows_of",
+        "count": 1
+      },
+      {
+        "predicate": "park_on",
+        "count": 1
+      },
+      {
+        "predicate": "studded_in",
+        "count": 1
+      },
+      {
+        "predicate": "gathered_at",
+        "count": 1
+      },
+      {
+        "predicate": "right_of",
+        "count": 1
+      },
+      {
+        "predicate": "combined_by",
+        "count": 1
+      },
+      {
+        "predicate": "on_each_of",
+        "count": 1
+      },
+      {
+        "predicate": "linked_together_with",
+        "count": 1
+      },
+      {
+        "predicate": "at_corner_of",
+        "count": 1
+      },
+      {
+        "predicate": "has_edge",
+        "count": 1
+      },
+      {
+        "predicate": "get_to",
+        "count": 1
+      },
+      {
+        "predicate": "crashing_along",
+        "count": 1
+      },
+      {
+        "predicate": "on_both_sides_along",
+        "count": 1
+      },
+      {
+        "predicate": "passe_through",
+        "count": 1
+      },
+      {
+        "predicate": "sailing_out",
+        "count": 1
+      },
+      {
+        "predicate": "given_priority_to_with",
+        "count": 1
+      },
+      {
+        "predicate": "in_southwest_of",
+        "count": 1
+      },
+      {
+        "predicate": "passing_through_between",
+        "count": 1
+      },
+      {
+        "predicate": "scatter_around",
+        "count": 1
+      },
+      {
+        "predicate": "split_up_into",
+        "count": 1
+      },
+      {
+        "predicate": "joint_together_formed",
+        "count": 1
+      },
+      {
+        "predicate": "connect_to",
+        "count": 1
+      },
+      {
+        "predicate": "connects_to",
+        "count": 1
+      },
+      {
+        "predicate": "provide_convenience_for",
+        "count": 1
+      },
+      {
+        "predicate": "together_constitute",
+        "count": 1
+      },
+      {
+        "predicate": "located_in_the_center_of",
+        "count": 1
+      },
+      {
+        "predicate": "run_through",
+        "count": 1
+      },
+      {
+        "predicate": "winding_circle",
+        "count": 1
+      },
+      {
+        "predicate": "encircled_in",
+        "count": 1
+      },
+      {
+        "predicate": "neaby",
+        "count": 1
+      },
+      {
+        "predicate": "is_a",
+        "count": 1
+      },
+      {
+        "predicate": "too_close_to",
+        "count": 1
+      },
+      {
+        "predicate": "separated_to",
+        "count": 1
+      },
+      {
+        "predicate": "cross_diagonally",
+        "count": 1
+      },
+      {
+        "predicate": "cross_vertically",
+        "count": 1
+      },
+      {
+        "predicate": "strides",
+        "count": 1
+      },
+      {
+        "predicate": "skirts",
+        "count": 1
+      },
+      {
+        "predicate": "attract_attention_of",
+        "count": 1
+      },
+      {
+        "predicate": "stretches_over",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_vicinity_of",
+        "count": 1
+      },
+      {
+        "predicate": "blend_with",
+        "count": 1
+      },
+      {
+        "predicate": "perpendicular_to",
+        "count": 1
+      },
+      {
+        "predicate": "going_across",
+        "count": 1
+      },
+      {
+        "predicate": "parked_full_of",
+        "count": 1
+      },
+      {
+        "predicate": "interspersed_by",
+        "count": 1
+      },
+      {
+        "predicate": "grow_in",
+        "count": 1
+      },
+      {
+        "predicate": "grow_on",
+        "count": 1
+      },
+      {
+        "predicate": "stop_on",
+        "count": 1
+      },
+      {
+        "predicate": "devide_apart",
+        "count": 1
+      },
+      {
+        "predicate": "lies_in",
+        "count": 1
+      },
+      {
+        "predicate": "outlined_with",
+        "count": 1
+      },
+      {
+        "predicate": "not_far_away",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_edge_with",
+        "count": 1
+      },
+      {
+        "predicate": "moored_in",
+        "count": 1
+      },
+      {
+        "predicate": "crashing_on",
+        "count": 1
+      },
+      {
+        "predicate": "as well as",
+        "count": 1
+      },
+      {
+        "predicate": "shaped",
+        "count": 1
+      },
+      {
+        "predicate": "together",
+        "count": 1
+      },
+      {
+        "predicate": "playing_baseball_in",
+        "count": 1
+      },
+      {
+        "predicate": "at_corners_of",
+        "count": 1
+      },
+      {
+        "predicate": "walking_into",
+        "count": 1
+      },
+      {
+        "predicate": "integrated_in",
+        "count": 1
+      },
+      {
+        "predicate": "constitutes_most_of",
+        "count": 1
+      },
+      {
+        "predicate": "picked_up",
+        "count": 1
+      },
+      {
+        "predicate": "passing_on",
+        "count": 1
+      },
+      {
+        "predicate": "on_its_banks_of",
+        "count": 1
+      },
+      {
+        "predicate": "stuck_in_the_middle_of",
+        "count": 1
+      },
+      {
+        "predicate": "moored_inside",
+        "count": 1
+      },
+      {
+        "predicate": "sailing_outside_in",
+        "count": 1
+      },
+      {
+        "predicate": "lined_up_in",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_left_hand_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_right_hand",
+        "count": 1
+      },
+      {
+        "predicate": "play_on",
+        "count": 1
+      },
+      {
+        "predicate": "traverse_in",
+        "count": 1
+      },
+      {
+        "predicate": "situated_at_the_bank_of",
+        "count": 1
+      },
+      {
+        "predicate": "toward",
+        "count": 1
+      },
+      {
+        "predicate": "in_a_corner_of_the_left_of",
+        "count": 1
+      },
+      {
+        "predicate": "is_on_the_right_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "crammed_with",
+        "count": 1
+      },
+      {
+        "predicate": "located_closely_to",
+        "count": 1
+      },
+      {
+        "predicate": "parks_in",
+        "count": 1
+      },
+      {
+        "predicate": "embellished_by",
+        "count": 1
+      },
+      {
+        "predicate": "consist_in",
+        "count": 1
+      },
+      {
+        "predicate": "a",
+        "count": 1
+      },
+      {
+        "predicate": "extends_to",
+        "count": 1
+      },
+      {
+        "predicate": "in_back_of",
+        "count": 1
+      },
+      {
+        "predicate": "right_bext_to",
+        "count": 1
+      },
+      {
+        "predicate": "forming_into",
+        "count": 1
+      },
+      {
+        "predicate": "stretches_acroos",
+        "count": 1
+      },
+      {
+        "predicate": "looks",
+        "count": 1
+      },
+      {
+        "predicate": "wreathing",
+        "count": 1
+      },
+      {
+        "predicate": "lying_next_to",
+        "count": 1
+      },
+      {
+        "predicate": "vertically",
+        "count": 1
+      },
+      {
+        "predicate": "neighbor_with",
+        "count": 1
+      },
+      {
+        "predicate": "lying_alongside",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_roadside_of",
+        "count": 1
+      },
+      {
+        "predicate": "flowing_winds",
+        "count": 1
+      },
+      {
+        "predicate": "sit_around",
+        "count": 1
+      },
+      {
+        "predicate": "seated_in",
+        "count": 1
+      },
+      {
+        "predicate": "crossing_over",
+        "count": 1
+      },
+      {
+        "predicate": "on_both_banks_of",
+        "count": 1
+      },
+      {
+        "predicate": "side_by_side_with",
+        "count": 1
+      },
+      {
+        "predicate": "in_parts_of",
+        "count": 1
+      },
+      {
+        "predicate": "mixed_with",
+        "count": 1
+      },
+      {
+        "predicate": "on_sides_of",
+        "count": 1
+      },
+      {
+        "predicate": "playing_in",
+        "count": 1
+      },
+      {
+        "predicate": "crosses_diagonally",
+        "count": 1
+      },
+      {
+        "predicate": "supported_by",
+        "count": 1
+      },
+      {
+        "predicate": "swashes_against",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_east",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_margins_of",
+        "count": 1
+      },
+      {
+        "predicate": "docked_aside",
+        "count": 1
+      },
+      {
+        "predicate": "very_close_in",
+        "count": 1
+      },
+      {
+        "predicate": "crossed",
+        "count": 1
+      },
+      {
+        "predicate": "impervious_to",
+        "count": 1
+      },
+      {
+        "predicate": "in_each_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "mutual_penetration",
+        "count": 1
+      },
+      {
+        "predicate": "has_feature_of",
+        "count": 1
+      },
+      {
+        "predicate": "locate_in_irregular_position_with",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_margin_of",
+        "count": 1
+      },
+      {
+        "predicate": "round",
+        "count": 1
+      },
+      {
+        "predicate": "belonging_to",
+        "count": 1
+      },
+      {
+        "predicate": "inlaid_in",
+        "count": 1
+      },
+      {
+        "predicate": "on_left_hand_of",
+        "count": 1
+      },
+      {
+        "predicate": "on_right_hand_of",
+        "count": 1
+      },
+      {
+        "predicate": "closing_to",
+        "count": 1
+      },
+      {
+        "predicate": "ornamented_by",
+        "count": 1
+      },
+      {
+        "predicate": "with_rust_marks_on",
+        "count": 1
+      },
+      {
+        "predicate": "paved_by",
+        "count": 1
+      },
+      {
+        "predicate": "on_right_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "on_left_of",
+        "count": 1
+      },
+      {
+        "predicate": "located_in_the_corner_of",
+        "count": 1
+      },
+      {
+        "predicate": "passes_between",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_other",
+        "count": 1
+      },
+      {
+        "predicate": "with_one_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "with_other_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "only_has",
+        "count": 1
+      },
+      {
+        "predicate": "prepare_to_stop_at",
+        "count": 1
+      },
+      {
+        "predicate": "settled_on",
+        "count": 1
+      },
+      {
+        "predicate": "runs_around",
+        "count": 1
+      },
+      {
+        "predicate": "rolled_up_by",
+        "count": 1
+      },
+      {
+        "predicate": "partly_bald_near",
+        "count": 1
+      },
+      {
+        "predicate": "closely_next_to",
+        "count": 1
+      },
+      {
+        "predicate": "stand_out_in",
+        "count": 1
+      },
+      {
+        "predicate": "goes_along_one_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "around_on_the_edge_of",
+        "count": 1
+      },
+      {
+        "predicate": "go_through",
+        "count": 1
+      },
+      {
+        "predicate": "driving_out_of",
+        "count": 1
+      },
+      {
+        "predicate": "along_one_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "pass_in_and_out_of",
+        "count": 1
+      },
+      {
+        "predicate": "beats",
+        "count": 1
+      },
+      {
+        "predicate": "hemmed_by",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_five_of_its_sides",
+        "count": 1
+      },
+      {
+        "predicate": "through_the_middle_of",
+        "count": 1
+      },
+      {
+        "predicate": "can_contain",
+        "count": 1
+      },
+      {
+        "predicate": "pass_on",
+        "count": 1
+      },
+      {
+        "predicate": "wider_than",
+        "count": 1
+      },
+      {
+        "predicate": "there_is",
+        "count": 1
+      },
+      {
+        "predicate": "connected_to_each_other_by",
+        "count": 1
+      },
+      {
+        "predicate": "at_the_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "distributed_in",
+        "count": 1
+      },
+      {
+        "predicate": "situated_in_the_middle_of",
+        "count": 1
+      },
+      {
+        "predicate": "side",
+        "count": 1
+      },
+      {
+        "predicate": "to_ensure_the_efficiency_of",
+        "count": 1
+      },
+      {
+        "predicate": "lies_against",
+        "count": 1
+      },
+      {
+        "predicate": "at_the_edges_of",
+        "count": 1
+      },
+      {
+        "predicate": "grows",
+        "count": 1
+      },
+      {
+        "predicate": "drains_into",
+        "count": 1
+      },
+      {
+        "predicate": "pouring_into",
+        "count": 1
+      },
+      {
+        "predicate": "take_on_a_radial_layout_with",
+        "count": 1
+      },
+      {
+        "predicate": "grows_in",
+        "count": 1
+      },
+      {
+        "predicate": "cramming",
+        "count": 1
+      },
+      {
+        "predicate": "in_its_sides",
+        "count": 1
+      },
+      {
+        "predicate": "marked_on",
+        "count": 1
+      },
+      {
+        "predicate": "laid_over",
+        "count": 1
+      },
+      {
+        "predicate": "insulate",
+        "count": 1
+      },
+      {
+        "predicate": "locate_in_the_northwest_of",
+        "count": 1
+      },
+      {
+        "predicate": "set_in",
+        "count": 1
+      },
+      {
+        "predicate": "combined_of",
+        "count": 1
+      },
+      {
+        "predicate": "stop",
+        "count": 1
+      },
+      {
+        "predicate": "stands_in",
+        "count": 1
+      },
+      {
+        "predicate": "seated_on",
+        "count": 1
+      },
+      {
+        "predicate": "besided",
+        "count": 1
+      },
+      {
+        "predicate": "edge_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_place",
+        "count": 1
+      },
+      {
+        "predicate": "protects",
+        "count": 1
+      },
+      {
+        "predicate": "shakes",
+        "count": 1
+      },
+      {
+        "predicate": "running_on",
+        "count": 1
+      },
+      {
+        "predicate": "planted_along",
+        "count": 1
+      },
+      {
+        "predicate": "driving_over",
+        "count": 1
+      },
+      {
+        "predicate": "produces",
+        "count": 1
+      },
+      {
+        "predicate": "distribute_around",
+        "count": 1
+      },
+      {
+        "predicate": "color_is_very_similar_to",
+        "count": 1
+      },
+      {
+        "predicate": "shedded_on",
+        "count": 1
+      },
+      {
+        "predicate": "blocking",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_shape_of",
+        "count": 1
+      },
+      {
+        "predicate": "stretches_alongside",
+        "count": 1
+      },
+      {
+        "predicate": "at_one_corner_of",
+        "count": 1
+      },
+      {
+        "predicate": "located_in_the_coner_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_back_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_a_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "passing",
+        "count": 1
+      },
+      {
+        "predicate": "connceted_with",
+        "count": 1
+      },
+      {
+        "predicate": "play",
+        "count": 1
+      },
+      {
+        "predicate": "traverse",
+        "count": 1
+      },
+      {
+        "predicate": "moored_compactly_in",
+        "count": 1
+      },
+      {
+        "predicate": "driving_cross",
+        "count": 1
+      },
+      {
+        "predicate": "stand_in",
+        "count": 1
+      },
+      {
+        "predicate": "is_over",
+        "count": 1
+      },
+      {
+        "predicate": "moored_along",
+        "count": 1
+      },
+      {
+        "predicate": "piled_up_into",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_central_area_of",
+        "count": 1
+      },
+      {
+        "predicate": "distribution_of",
+        "count": 1
+      },
+      {
+        "predicate": "at_both_side_of",
+        "count": 1
+      },
+      {
+        "predicate": "on_the_one_hand_of",
+        "count": 1
+      },
+      {
+        "predicate": "cut",
+        "count": 1
+      },
+      {
+        "predicate": "in the shade of",
+        "count": 1
+      },
+      {
+        "predicate": "disturbed",
+        "count": 1
+      },
+      {
+        "predicate": "waiting_for",
+        "count": 1
+      },
+      {
+        "predicate": "flapped_in",
+        "count": 1
+      },
+      {
+        "predicate": "become",
+        "count": 1
+      },
+      {
+        "predicate": "lies_like",
+        "count": 1
+      },
+      {
+        "predicate": "belongs_to",
+        "count": 1
+      },
+      {
+        "predicate": "is_on",
+        "count": 1
+      },
+      {
+        "predicate": "communicate",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_centre_of",
+        "count": 1
+      },
+      {
+        "predicate": "in_the_southeast_of",
+        "count": 1
+      },
+      {
+        "predicate": "on_another",
+        "count": 1
+      },
+      {
+        "predicate": "is_fan_shape",
+        "count": 1
+      },
+      {
+        "predicate": "observed_from",
+        "count": 1
+      },
+      {
+        "predicate": "dock_at",
+        "count": 1
+      },
+      {
+        "predicate": "carry",
+        "count": 1
+      },
+      {
+        "predicate": "stretches_to",
+        "count": 1
+      }
+    ],
+    "top": [
+      {
+        "predicate": "near",
+        "count": 2680
+      },
+      {
+        "predicate": "in",
+        "count": 2591
+      },
+      {
+        "predicate": "surrounded_by",
+        "count": 1949
+      },
+      {
+        "predicate": "around",
+        "count": 1845
+      },
+      {
+        "predicate": "on",
+        "count": 1050
+      },
+      {
+        "predicate": "next_to",
+        "count": 1022
+      },
+      {
+        "predicate": "on_both_sides_of",
+        "count": 779
+      },
+      {
+        "predicate": "inside",
+        "count": 568
+      },
+      {
+        "predicate": "between",
+        "count": 431
+      },
+      {
+        "predicate": "with",
+        "count": 369
+      },
+      {
+        "predicate": "beside",
+        "count": 286
+      },
+      {
+        "predicate": "over",
+        "count": 175
+      },
+      {
+        "predicate": "of",
+        "count": 136
+      },
+      {
+        "predicate": "in_the_middle_of",
+        "count": 104
+      },
+      {
+        "predicate": "on_one_side_of",
+        "count": 102
+      },
+      {
+        "predicate": "across",
+        "count": 102
+      },
+      {
+        "predicate": "in_two_sides_of",
+        "count": 98
+      },
+      {
+        "predicate": "semisurrounded_by",
+        "count": 96
+      },
+      {
+        "predicate": "nearby",
+        "count": 96
+      },
+      {
+        "predicate": "near_to",
+        "count": 93
+      },
+      {
+        "predicate": "besides",
+        "count": 86
+      },
+      {
+        "predicate": "made_up_of",
+        "count": 74
+      },
+      {
+        "predicate": "separated_by",
+        "count": 73
+      },
+      {
+        "predicate": "surround",
+        "count": 72
+      },
+      {
+        "predicate": "in_front_of",
+        "count": 71
+      },
+      {
+        "predicate": "at",
+        "count": 67
+      },
+      {
+        "predicate": "includes",
+        "count": 62
+      },
+      {
+        "predicate": "among",
+        "count": 58
+      },
+      {
+        "predicate": "semi_surrounded_by",
+        "count": 57
+      },
+      {
+        "predicate": "alongside",
+        "count": 57
+      },
+      {
+        "predicate": "surrounds",
+        "count": 56
+      },
+      {
+        "predicate": "close_to",
+        "count": 56
+      },
+      {
+        "predicate": "located_in",
+        "count": 56
+      },
+      {
+        "predicate": "has",
+        "count": 56
+      },
+      {
+        "predicate": "surrounded",
+        "count": 55
+      },
+      {
+        "predicate": "contains",
+        "count": 53
+      },
+      {
+        "predicate": "along",
+        "count": 52
+      },
+      {
+        "predicate": "through",
+        "count": 50
+      },
+      {
+        "predicate": "on_the_side_of",
+        "count": 40
+      },
+      {
+        "predicate": "make_up",
+        "count": 39
+      },
+      {
+        "predicate": "in_the_center_of",
+        "count": 37
+      },
+      {
+        "predicate": "aside",
+        "count": 36
+      },
+      {
+        "predicate": "separates",
+        "count": 35
+      },
+      {
+        "predicate": "consists_of",
+        "count": 32
+      },
+      {
+        "predicate": "in_one_side_of",
+        "count": 32
+      },
+      {
+        "predicate": "decorated_with",
+        "count": 31
+      },
+      {
+        "predicate": "integrated_with",
+        "count": 31
+      },
+      {
+        "predicate": "form",
+        "count": 30
+      },
+      {
+        "predicate": "covered_with",
+        "count": 28
+      },
+      {
+        "predicate": "behind",
+        "count": 27
+      },
+      {
+        "predicate": "surrounding",
+        "count": 26
+      },
+      {
+        "predicate": "contain",
+        "count": 26
+      },
+      {
+        "predicate": "is",
+        "count": 26
+      },
+      {
+        "predicate": "together_with",
+        "count": 25
+      },
+      {
+        "predicate": "connects",
+        "count": 25
+      },
+      {
+        "predicate": "connected_to",
+        "count": 25
+      },
+      {
+        "predicate": "outside",
+        "count": 25
+      },
+      {
+        "predicate": "divided_by",
+        "count": 25
+      },
+      {
+        "predicate": "by",
+        "count": 24
+      },
+      {
+        "predicate": "located_on",
+        "count": 22
+      },
+      {
+        "predicate": "include",
+        "count": 22
+      },
+      {
+        "predicate": "spans",
+        "count": 22
+      },
+      {
+        "predicate": "on_the_other_side_of",
+        "count": 21
+      },
+      {
+        "predicate": "cover",
+        "count": 20
+      },
+      {
+        "predicate": "passes_through",
+        "count": 20
+      },
+      {
+        "predicate": "flows_through",
+        "count": 20
+      },
+      {
+        "predicate": "sandwiched_between",
+        "count": 20
+      },
+      {
+        "predicate": "surroundeded_by",
+        "count": 19
+      },
+      {
+        "predicate": "beside_in",
+        "count": 19
+      },
+      {
+        "predicate": "divided_into",
+        "count": 19
+      },
+      {
+        "predicate": "surround_by",
+        "count": 18
+      },
+      {
+        "predicate": "parked_on",
+        "count": 18
+      },
+      {
+        "predicate": "passing_through",
+        "count": 18
+      },
+      {
+        "predicate": "under",
+        "count": 17
+      },
+      {
+        "predicate": "semisurrounds",
+        "count": 17
+      },
+      {
+        "predicate": "on_either_side_of",
+        "count": 16
+      },
+      {
+        "predicate": "parked_at",
+        "count": 16
+      },
+      {
+        "predicate": "are",
+        "count": 16
+      },
+      {
+        "predicate": "above",
+        "count": 15
+      },
+      {
+        "predicate": "composed_of",
+        "count": 15
+      },
+      {
+        "predicate": "at_the_corner_of",
+        "count": 15
+      },
+      {
+        "predicate": "connected",
+        "count": 15
+      },
+      {
+        "predicate": "separate",
+        "count": 13
+      },
+      {
+        "predicate": "situated_in",
+        "count": 13
+      },
+      {
+        "predicate": "lying_on",
+        "count": 13
+      },
+      {
+        "predicate": "covered_by",
+        "count": 12
+      },
+      {
+        "predicate": "parked_in",
+        "count": 12
+      },
+      {
+        "predicate": "pass_through",
+        "count": 12
+      },
+      {
+        "predicate": "like",
+        "count": 12
+      },
+      {
+        "predicate": "embraced_by",
+        "count": 12
+      },
+      {
+        "predicate": "have",
+        "count": 12
+      },
+      {
+        "predicate": "connected_by",
+        "count": 12
+      },
+      {
+        "predicate": "passing_by",
+        "count": 12
+      },
+      {
+        "predicate": "divide",
+        "count": 12
+      },
+      {
+        "predicate": "locate_in",
+        "count": 12
+      },
+      {
+        "predicate": "on_two_sides_of",
+        "count": 12
+      },
+      {
+        "predicate": "encircle",
+        "count": 12
+      },
+      {
+        "predicate": "connecting",
+        "count": 11
+      },
+      {
+        "predicate": "full_of",
+        "count": 11
+      },
+      {
+        "predicate": "in_center_of",
+        "count": 10
+      }
+    ],
+    "singleton_predicate_list": [
+      "a",
+      "accompanyed_by",
+      "accompanying_by",
+      "adjoins",
+      "along_one_side_of",
+      "appear_the_northeast",
+      "are_meadow_a_beach",
+      "around_on_the_edge_of",
+      "arounded",
+      "arranged_with",
+      "as well as",
+      "at_angle_of",
+      "at_both_side_of",
+      "at_corner_of",
+      "at_corners_of",
+      "at_one_corner_of",
+      "at_the_bottom_of",
+      "at_the_edges_of",
+      "at_the_foot_of",
+      "at_the_side_of",
+      "attract_attention_of",
+      "back_to",
+      "basking_in",
+      "beats",
+      "become",
+      "belong_to",
+      "belonging_to",
+      "belongs_to",
+      "bending_to_form",
+      "besided",
+      "blend_with",
+      "blocked_by",
+      "blocking",
+      "blow_against",
+      "blows",
+      "built_among",
+      "by_the_side_of",
+      "can_contain",
+      "carry",
+      "caught_in",
+      "closely",
+      "closely_next_to",
+      "closing_to",
+      "color_is_very_similar_to",
+      "combined_by",
+      "combined_of",
+      "come_to",
+      "coming_to",
+      "communicate",
+      "connceted_with",
+      "connect_to",
+      "connected_to_each_other_by",
+      "connects_the_two_sides_of",
+      "connects_to",
+      "consist",
+      "consist_in",
+      "constitutes_most_of",
+      "converging_to",
+      "cover_most_part_of",
+      "cover_mostly_of",
+      "crammed_with",
+      "cramming",
+      "crashing_along",
+      "crashing_on",
+      "creates",
+      "cross_diagonally",
+      "cross_vertically",
+      "crossed",
+      "crosses_diagonally",
+      "crossing_diagonally",
+      "crossing_over",
+      "cut",
+      "cut_into_different_parts",
+      "decorated",
+      "decorates",
+      "deep_in",
+      "depends_on",
+      "devide_apart",
+      "distribute_around",
+      "distribute_on_the_either_side_of",
+      "distributed_across_the_banks_of",
+      "distributed_in",
+      "distributes_in",
+      "distribution_of",
+      "disturbed",
+      "divide_into_six_section_by",
+      "divided_into_by",
+      "divided_into_several_pieces_by",
+      "dock_at",
+      "docked_against",
+      "docked_aside",
+      "drains_into",
+      "driven_on",
+      "driving_cross",
+      "driving_out_of",
+      "driving_over",
+      "during",
+      "each",
+      "edge_of",
+      "embellished_by",
+      "encircled_in",
+      "enclosed_with",
+      "extends_to",
+      "far_from",
+      "filled",
+      "filling",
+      "flapped_in",
+      "float_on",
+      "flow_down",
+      "flow_in",
+      "flow_through",
+      "flowing_around",
+      "flowing_into",
+      "flowing_winds",
+      "flows_across",
+      "for_rest_and_take_a_walk_in",
+      "forming",
+      "forming_into",
+      "gathered_at",
+      "get_to",
+      "given_priority_to_with",
+      "go_through",
+      "goes_along_one_side_of",
+      "going_across",
+      "going_under",
+      "grow_in",
+      "grow_on",
+      "grow_out_of",
+      "growing_along",
+      "grows",
+      "grows_in",
+      "has_become",
+      "has_branches",
+      "has_built",
+      "has_edge",
+      "has_feature_of",
+      "has_printed_text_from",
+      "has_shallow",
+      "have_no",
+      "hem",
+      "hemmed_by",
+      "hidden_in",
+      "hiding",
+      "houses",
+      "impervious_to",
+      "in the center of",
+      "in the shade of",
+      "in_a_corner",
+      "in_a_corner_of_the_left_of",
+      "in_a_side_of",
+      "in_back_of",
+      "in_bottom_of",
+      "in_each_side_of",
+      "in_its_sides",
+      "in_northwest_of",
+      "in_one_corner_of",
+      "in_parts_of",
+      "in_place",
+      "in_southwest_of",
+      "in_the_back_of",
+      "in_the_central_area_of",
+      "in_the_centre_of",
+      "in_the_distance_from",
+      "in_the_east",
+      "in_the_left_hand_of",
+      "in_the_margins_of",
+      "in_the_middle",
+      "in_the_north_of",
+      "in_the_northwest_of",
+      "in_the_other_side_of",
+      "in_the_right_hand",
+      "in_the_roadside_of",
+      "in_the_shadows_of",
+      "in_the_shape_of",
+      "in_the_southeast_of",
+      "in_the_vicinity_of",
+      "in_x_shape_of",
+      "inlaid_in",
+      "insulate",
+      "integrated_in",
+      "interspersed_by",
+      "intersperses_in",
+      "invading",
+      "is_a",
+      "is_a_piece_of",
+      "is_center_of",
+      "is_fan_shape",
+      "is_on",
+      "is_on_the_right_side_of",
+      "is_over",
+      "is_the_center_of",
+      "join",
+      "joint_together_formed",
+      "laid_over",
+      "leading_to",
+      "lies",
+      "lies_against",
+      "lies_in",
+      "lies_like",
+      "lined_up_in",
+      "linked_together_with",
+      "living_nearby",
+      "locate_in_irregular_position_with",
+      "locate_in_southeast_of",
+      "locate_in_the_northwest_of",
+      "locate_in_the_southwest_of",
+      "locate_on",
+      "locate_on_the_side_of",
+      "located_against",
+      "located_aisde",
+      "located_closely_to",
+      "located_in_center_of",
+      "located_in_the_center_of",
+      "located_in_the_coner_of",
+      "located_in_the_corner_of",
+      "located_in_the_side_of",
+      "look_like",
+      "looks",
+      "lying_across",
+      "lying_alongside",
+      "lying_next_to",
+      "makes_sharp_contrast_with",
+      "marked_on",
+      "meets",
+      "mixed_with",
+      "moored_along",
+      "moored_at",
+      "moored_compactly_in",
+      "moored_in",
+      "moored_inside",
+      "moored_next_to",
+      "more_expensive_than",
+      "mutual_penetration",
+      "neaby",
+      "neighbor_with",
+      "nestled_in",
+      "nexting_to",
+      "nextto",
+      "not_at_positions",
+      "not_far_away",
+      "not_parralleled_with",
+      "nourished_by",
+      "observed_from",
+      "occupied_with",
+      "offers_convenience_to",
+      "on_another",
+      "on_banks_of",
+      "on_both_banks_of",
+      "on_both_sides_along",
+      "on_each_of",
+      "on_its_bank",
+      "on_its_banks_of",
+      "on_its_roadsides_of",
+      "on_its_side",
+      "on_left_hand_of",
+      "on_left_of",
+      "on_one_ends_of",
+      "on_other_hand_of",
+      "on_right_hand_of",
+      "on_right_side_of",
+      "on_sides_of",
+      "on_the_crossed_position_of",
+      "on_the_curved_position_of",
+      "on_the_edge_with",
+      "on_the_five_of_its_sides",
+      "on_the_margin_of",
+      "on_the_one_hand_of",
+      "on_the_other",
+      "on_two_ends_of",
+      "only_has",
+      "only_one_road_away_from",
+      "onto",
+      "opened",
+      "ornamented_by",
+      "outlined_with",
+      "over_against_to",
+      "overlooks",
+      "overpassed_by",
+      "overpassing",
+      "overshadowed",
+      "owned_by",
+      "painted_on",
+      "painted_with",
+      "park_at",
+      "park_on",
+      "parked",
+      "parked_beside",
+      "parked_full_of",
+      "parked_near",
+      "parked_next_to",
+      "parking_outside",
+      "parks_in",
+      "partly_bald_near",
+      "partly_covered_at",
+      "pass_in_and_out_of",
+      "pass_on",
+      "pass_over",
+      "passe_through",
+      "passed_over",
+      "passed_under",
+      "passes_between",
+      "passes_through_aside",
+      "passing",
+      "passing_on",
+      "passing_through_between",
+      "past",
+      "paved_by",
+      "perpendicular_to",
+      "picked_up",
+      "piled_up_into",
+      "planted_along",
+      "play",
+      "play_on",
+      "playing_baseball_in",
+      "playing_in",
+      "pouring_into",
+      "prepare_to_stop_at",
+      "produces",
+      "protected_with",
+      "protects",
+      "provide",
+      "provide_convenience_for",
+      "provides_convenience_for",
+      "punctuated_with",
+      "put_off_from",
+      "quite_closely_to",
+      "reach_into",
+      "right_bext_to",
+      "right_of",
+      "roll_up",
+      "rolled_up",
+      "rolled_up_by",
+      "round",
+      "run_down",
+      "run_through",
+      "running_in",
+      "running_into",
+      "running_on",
+      "runs_around",
+      "sailing_out",
+      "sailing_outside_in",
+      "sandwiched_in_the_middle_of",
+      "scatter_around",
+      "scattered_around",
+      "seated_alongside",
+      "seated_in",
+      "seated_on",
+      "send_up",
+      "separated_to",
+      "separated_with",
+      "set_in",
+      "set_in_towards",
+      "set_off",
+      "set_up_on",
+      "settled_in",
+      "settled_on",
+      "shakes",
+      "shaped",
+      "shaped_as",
+      "shedded_on",
+      "sheltered",
+      "shining_on",
+      "shocked_heavily_by",
+      "shrouds",
+      "side",
+      "side_by_side_with",
+      "sit_around",
+      "sit_at",
+      "sitting_by",
+      "sitting_in",
+      "situated_at_the_bank_of",
+      "situated_in_the_middle_of",
+      "skirts",
+      "slapped_against",
+      "sorrounding",
+      "speared_out",
+      "spell",
+      "split_up_into",
+      "sprouting_from",
+      "stand_in",
+      "stand_out_in",
+      "standing_in",
+      "stands_in",
+      "start_from",
+      "staying_on",
+      "steering_towards",
+      "stop",
+      "stop_here",
+      "stop_on",
+      "stopping_in",
+      "stops",
+      "stretch_from",
+      "stretch_on",
+      "stretched_to",
+      "stretches_acroos",
+      "stretches_alongside",
+      "stretches_from",
+      "stretches_over",
+      "stretches_to",
+      "stretching_out",
+      "stretcj_across",
+      "strides",
+      "stuck_in_the_middle_of",
+      "studded_in",
+      "submerged",
+      "supported_by",
+      "surf",
+      "surfs",
+      "surround_both_sides_of",
+      "surroundeded",
+      "surrounds_as_a_circle_in",
+      "suttounded_by",
+      "swash_against",
+      "swashes_against",
+      "take_on_a_radial_layout_with",
+      "there_is",
+      "through_the_middle_of",
+      "to_ensure_the_efficiency_of",
+      "together",
+      "together_constitute",
+      "too_close_to",
+      "torn_up_by",
+      "toward",
+      "travel_in",
+      "traverse",
+      "traverse_in",
+      "traverses_through",
+      "unable_to_see",
+      "vertical_to",
+      "vertically",
+      "very_close_in",
+      "waiting_for",
+      "walking_into",
+      "walking_on",
+      "was",
+      "wider_than",
+      "wind_through",
+      "winding_circle",
+      "with_one_side_of",
+      "with_other_side_of",
+      "with_rust_marks_on",
+      "wreathed",
+      "wreathing"
+    ]
+  },
+  "coverage": {
+    "zero_entity_captions": 1,
+    "zero_attribute_captions": 748,
+    "zero_relation_captions": 1488
+  }
+}

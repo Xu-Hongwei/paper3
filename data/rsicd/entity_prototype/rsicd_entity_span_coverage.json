@@ -1,0 +1,811 @@
+{
+  "metadata": {
+    "input": "E:\\paper3\\data\\structured_semantics\\rsicd_train_qwen37_v30_open.json",
+    "model_name": "ViT-B-32-quickgelu",
+    "max_words": 30,
+    "sot_token_id": 49406,
+    "eot_token_id": 49407,
+    "matching_rule": "contiguous exact CLIP token subsequence after datasets.utils.pre_caption preprocessing"
+  },
+  "summary": {
+    "records": 12296,
+    "captions_with_entities": 12295,
+    "zero_entity_captions": 1,
+    "total_entities": 32667,
+    "unique_token_span_matches": 32182,
+    "multiple_token_span_matches": 431,
+    "matched_any": 32613,
+    "unmatched_total": 54,
+    "safe_unique_coverage": 0.9851532127223191,
+    "any_match_coverage": 0.9983469556433098,
+    "status_counts": {
+      "unique": 32182,
+      "multiple": 431,
+      "unmatched": 51,
+      "truncated": 2,
+      "invalid_entity": 1
+    },
+    "span_length_histogram": {
+      "1": 24259,
+      "2": 7053,
+      "3": 800,
+      "4": 433,
+      "5": 101,
+      "6": 17,
+      "7": 2,
+      "8": 1
+    }
+  },
+  "examples": {
+    "multiple": [
+      {
+        "record_index": 79,
+        "source_index": null,
+        "caption": "it is gray land and road, green trees and grassland , and in all color`s cars .",
+        "entity_index": 0,
+        "entity": "land",
+        "status": "multiple",
+        "caption_train": "it is gray land and road green trees and grassland and in all color`s cars",
+        "entity_clean": "land",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            4,
+            5
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "record_index": 107,
+        "source_index": null,
+        "caption": "turn up the waves of the sea blue sea .",
+        "entity_index": 1,
+        "entity": "sea",
+        "status": "multiple",
+        "caption_train": "turn up the waves of the sea blue sea",
+        "entity_clean": "sea",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            7,
+            8
+          ],
+          [
+            9,
+            10
+          ]
+        ]
+      },
+      {
+        "record_index": 116,
+        "source_index": null,
+        "caption": "there is a great football, football field is surrounded by the desert .",
+        "entity_index": 0,
+        "entity": "football",
+        "status": "multiple",
+        "caption_train": "there is a great football football field is surrounded by the desert",
+        "entity_clean": "football",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ]
+        ]
+      },
+      {
+        "record_index": 177,
+        "source_index": null,
+        "caption": "there is a green lake, lake around the woods .",
+        "entity_index": 0,
+        "entity": "lake",
+        "status": "multiple",
+        "caption_train": "there is a green lake lake around the woods",
+        "entity_clean": "lake",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ]
+        ]
+      },
+      {
+        "record_index": 185,
+        "source_index": null,
+        "caption": "there is a red track around the stadium in the stadium .",
+        "entity_index": 1,
+        "entity": "stadium",
+        "status": "multiple",
+        "caption_train": "there is a red track around the stadium in the stadium",
+        "entity_clean": "stadium",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            8,
+            9
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "record_index": 192,
+        "source_index": null,
+        "caption": "a playground surrounded by many green trees is next to some buildings and trees .",
+        "entity_index": 1,
+        "entity": "trees",
+        "status": "multiple",
+        "caption_train": "a playground surrounded by many green trees is next to some buildings and trees",
+        "entity_clean": "trees",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            7,
+            8
+          ],
+          [
+            14,
+            15
+          ]
+        ]
+      },
+      {
+        "record_index": 192,
+        "source_index": null,
+        "caption": "a playground surrounded by many green trees is next to some buildings and trees .",
+        "entity_index": 3,
+        "entity": "trees",
+        "status": "multiple",
+        "caption_train": "a playground surrounded by many green trees is next to some buildings and trees",
+        "entity_clean": "trees",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            7,
+            8
+          ],
+          [
+            14,
+            15
+          ]
+        ]
+      },
+      {
+        "record_index": 277,
+        "source_index": null,
+        "caption": "a bridge is on a river with several buildings on one side of the river .",
+        "entity_index": 1,
+        "entity": "river",
+        "status": "multiple",
+        "caption_train": "a bridge is on a river with several buildings on one side of the river",
+        "entity_clean": "river",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            6,
+            7
+          ],
+          [
+            15,
+            16
+          ]
+        ]
+      },
+      {
+        "record_index": 396,
+        "source_index": null,
+        "caption": "lots of plants are dark green trees and a few plants are spring green trees .",
+        "entity_index": 0,
+        "entity": "plants",
+        "status": "multiple",
+        "caption_train": "lots of plants are dark green trees and a few plants are spring green trees",
+        "entity_clean": "plants",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "record_index": 396,
+        "source_index": null,
+        "caption": "lots of plants are dark green trees and a few plants are spring green trees .",
+        "entity_index": 1,
+        "entity": "plants",
+        "status": "multiple",
+        "caption_train": "lots of plants are dark green trees and a few plants are spring green trees",
+        "entity_clean": "plants",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "record_index": 397,
+        "source_index": null,
+        "caption": "so many dark green plants in it while some spring green plants plants in side .",
+        "entity_index": 0,
+        "entity": "plants",
+        "status": "multiple",
+        "caption_train": "so many dark green plants in it while some spring green plants plants in side",
+        "entity_clean": "plants",
+        "span_length": 1,
+        "num_matches": 3,
+        "spans": [
+          [
+            5,
+            6
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            14
+          ]
+        ]
+      },
+      {
+        "record_index": 397,
+        "source_index": null,
+        "caption": "so many dark green plants in it while some spring green plants plants in side .",
+        "entity_index": 1,
+        "entity": "plants",
+        "status": "multiple",
+        "caption_train": "so many dark green plants in it while some spring green plants plants in side",
+        "entity_clean": "plants",
+        "span_length": 1,
+        "num_matches": 3,
+        "spans": [
+          [
+            5,
+            6
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            14
+          ]
+        ]
+      },
+      {
+        "record_index": 451,
+        "source_index": null,
+        "caption": "alongside the small cement bridge is the curved wide bridge across the river .",
+        "entity_index": 1,
+        "entity": "bridge",
+        "status": "multiple",
+        "caption_train": "alongside the small cement bridge is the curved wide bridge across the river",
+        "entity_clean": "bridge",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            5,
+            6
+          ],
+          [
+            10,
+            11
+          ]
+        ]
+      },
+      {
+        "record_index": 479,
+        "source_index": null,
+        "caption": "a red and white small plane and a silver-white plane are parked at their gate .",
+        "entity_index": 0,
+        "entity": "plane",
+        "status": "multiple",
+        "caption_train": "a red and white small plane and a silver white plane are parked at their gate",
+        "entity_clean": "plane",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            6,
+            7
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "record_index": 479,
+        "source_index": null,
+        "caption": "a red and white small plane and a silver-white plane are parked at their gate .",
+        "entity_index": 1,
+        "entity": "plane",
+        "status": "multiple",
+        "caption_train": "a red and white small plane and a silver white plane are parked at their gate",
+        "entity_clean": "plane",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            6,
+            7
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "record_index": 480,
+        "source_index": null,
+        "caption": "a white plane and a pink plane are on an airport .",
+        "entity_index": 0,
+        "entity": "plane",
+        "status": "multiple",
+        "caption_train": "a white plane and a pink plane are on an airport",
+        "entity_clean": "plane",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            8
+          ]
+        ]
+      },
+      {
+        "record_index": 480,
+        "source_index": null,
+        "caption": "a white plane and a pink plane are on an airport .",
+        "entity_index": 1,
+        "entity": "plane",
+        "status": "multiple",
+        "caption_train": "a white plane and a pink plane are on an airport",
+        "entity_clean": "plane",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            8
+          ]
+        ]
+      },
+      {
+        "record_index": 481,
+        "source_index": null,
+        "caption": "a white plane and a pink plane are parked on an airport .",
+        "entity_index": 0,
+        "entity": "plane",
+        "status": "multiple",
+        "caption_train": "a white plane and a pink plane are parked on an airport",
+        "entity_clean": "plane",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            8
+          ]
+        ]
+      },
+      {
+        "record_index": 481,
+        "source_index": null,
+        "caption": "a white plane and a pink plane are parked on an airport .",
+        "entity_index": 1,
+        "entity": "plane",
+        "status": "multiple",
+        "caption_train": "a white plane and a pink plane are parked on an airport",
+        "entity_clean": "plane",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            7,
+            8
+          ]
+        ]
+      },
+      {
+        "record_index": 522,
+        "source_index": null,
+        "caption": "a round field situates next to a football field .",
+        "entity_index": 0,
+        "entity": "field",
+        "status": "multiple",
+        "caption_train": "a round field situates next to a football field",
+        "entity_clean": "field",
+        "span_length": 1,
+        "num_matches": 2,
+        "spans": [
+          [
+            3,
+            4
+          ],
+          [
+            10,
+            11
+          ]
+        ]
+      }
+    ],
+    "truncated": [
+      {
+        "record_index": 6887,
+        "source_index": null,
+        "caption": "this neighborhood is not only bustling and the environment is very good in addition to intensive high-rise buildings, there is a large area of the sports field and dense vegetation .",
+        "entity_index": 4,
+        "entity": "vegetation",
+        "status": "truncated",
+        "caption_train": "this neighborhood is not only bustling and the environment is very good in addition to intensive high rise buildings there is a large area of the sports field and dense",
+        "caption_full": "this neighborhood is not only bustling and the environment is very good in addition to intensive high rise buildings there is a large area of the sports field and dense vegetation",
+        "entity_clean": "vegetation",
+        "span_length": 1
+      },
+      {
+        "record_index": 6949,
+        "source_index": null,
+        "caption": "the playground is located in the quadrilateral surrounded by the buildings, and the buildings are too close to the playground, so that part of the playground is covered by the shadow .",
+        "entity_index": 4,
+        "entity": "shadow",
+        "status": "truncated",
+        "caption_train": "the playground is located in the quadrilateral surrounded by the buildings and the buildings are too close to the playground so that part of the playground is covered by the",
+        "caption_full": "the playground is located in the quadrilateral surrounded by the buildings and the buildings are too close to the playground so that part of the playground is covered by the shadow",
+        "entity_clean": "shadow",
+        "span_length": 1
+      }
+    ],
+    "unmatched": [
+      {
+        "record_index": 531,
+        "source_index": null,
+        "caption": "the cbd district is made up of many office buildings, shopping malls,wide roads and vehicles .",
+        "entity_index": 2,
+        "entity": "shopping malls",
+        "status": "unmatched",
+        "caption_train": "the cbd district is made up of many office buildings shopping mallswide roads and vehicles",
+        "caption_full": "the cbd district is made up of many office buildings shopping mallswide roads and vehicles",
+        "entity_clean": "shopping malls",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 2
+      },
+      {
+        "record_index": 693,
+        "source_index": null,
+        "caption": "this is a large sports park near residebtial area which contains a baseball field, a tennis court and several basketball courts .",
+        "entity_index": 1,
+        "entity": "residential area",
+        "status": "unmatched",
+        "caption_train": "this is a large sports park near residebtial area which contains a baseball field a tennis court and several basketball courts",
+        "caption_full": "this is a large sports park near residebtial area which contains a baseball field a tennis court and several basketball courts",
+        "entity_clean": "residential area",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 697,
+        "source_index": null,
+        "caption": "square,surrounded by the comings and goings of the car on the road .",
+        "entity_index": 0,
+        "entity": "square",
+        "status": "unmatched",
+        "caption_train": "squaresurrounded by the comings and goings of the car on the road",
+        "caption_full": "squaresurrounded by the comings and goings of the car on the road",
+        "entity_clean": "square",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 1
+      },
+      {
+        "record_index": 861,
+        "source_index": null,
+        "caption": "a football field with several buildiings surroudned .",
+        "entity_index": 1,
+        "entity": "buildings",
+        "status": "unmatched",
+        "caption_train": "a football field with several buildiings surroudned",
+        "caption_full": "a football field with several buildiings surroudned",
+        "entity_clean": "buildings",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 1
+      },
+      {
+        "record_index": 1358,
+        "source_index": null,
+        "caption": "the bridge makes the residential area and business dictrict connected with each other .",
+        "entity_index": 2,
+        "entity": "business district",
+        "status": "unmatched",
+        "caption_train": "the bridge makes the residential area and business dictrict connected with each other",
+        "caption_full": "the bridge makes the residential area and business dictrict connected with each other",
+        "entity_clean": "business district",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 1463,
+        "source_index": null,
+        "caption": "a green pond is in the hills,surrounded by rock .",
+        "entity_index": 1,
+        "entity": "hills",
+        "status": "unmatched",
+        "caption_train": "a green pond is in the hillssurrounded by rock",
+        "caption_full": "a green pond is in the hillssurrounded by rock",
+        "entity_clean": "hills",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 1
+      },
+      {
+        "record_index": 1517,
+        "source_index": null,
+        "caption": "a green pond is in the hills,surrounded by rocks .",
+        "entity_index": 1,
+        "entity": "hills",
+        "status": "unmatched",
+        "caption_train": "a green pond is in the hillssurrounded by rocks",
+        "caption_full": "a green pond is in the hillssurrounded by rocks",
+        "entity_clean": "hills",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 1
+      },
+      {
+        "record_index": 1546,
+        "source_index": null,
+        "caption": "a building is surrounded by dark green trees,in front of the square .",
+        "entity_index": 1,
+        "entity": "trees",
+        "status": "unmatched",
+        "caption_train": "a building is surrounded by dark green treesin front of the square",
+        "caption_full": "a building is surrounded by dark green treesin front of the square",
+        "entity_clean": "trees",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 1
+      },
+      {
+        "record_index": 1683,
+        "source_index": null,
+        "caption": "one of the six parts of farmland is red and the others are dark green .",
+        "entity_index": 1,
+        "entity": "one part",
+        "status": "unmatched",
+        "caption_train": "one of the six parts of farmland is red and the others are dark green",
+        "caption_full": "one of the six parts of farmland is red and the others are dark green",
+        "entity_clean": "one part",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 2060,
+        "source_index": null,
+        "caption": "the left hand of the river is dense forests while the right hand is fertile farmland .",
+        "entity_index": 2,
+        "entity": "right hand of the river",
+        "status": "unmatched",
+        "caption_train": "the left hand of the river is dense forests while the right hand is fertile farmland",
+        "caption_full": "the left hand of the river is dense forests while the right hand is fertile farmland",
+        "entity_clean": "right hand of the river",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 5
+      },
+      {
+        "record_index": 2266,
+        "source_index": null,
+        "caption": "this is a well-organized commuity,scattered with a few villas and decorated with lush plants .",
+        "entity_index": 0,
+        "entity": "community",
+        "status": "unmatched",
+        "caption_train": "this is a well organized commuityscattered with a few villas and decorated with lush plants",
+        "caption_full": "this is a well organized commuityscattered with a few villas and decorated with lush plants",
+        "entity_clean": "community",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 1
+      },
+      {
+        "record_index": 2576,
+        "source_index": null,
+        "caption": "the swimming pool is surrounded by lush trees,on the side of the beach .",
+        "entity_index": 1,
+        "entity": "trees",
+        "status": "unmatched",
+        "caption_train": "the swimming pool is surrounded by lush treeson the side of the beach",
+        "caption_full": "the swimming pool is surrounded by lush treeson the side of the beach",
+        "entity_clean": "trees",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 1
+      },
+      {
+        "record_index": 2816,
+        "source_index": null,
+        "caption": "the area, close to the rivier, is a exercise yard which if formed by baksetball and tennis courts .",
+        "entity_index": 3,
+        "entity": "baksetball courts",
+        "status": "unmatched",
+        "caption_train": "the area close to the rivier is a exercise yard which if formed by baksetball and tennis courts",
+        "caption_full": "the area close to the rivier is a exercise yard which if formed by baksetball and tennis courts",
+        "entity_clean": "baksetball courts",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 4
+      },
+      {
+        "record_index": 2874,
+        "source_index": null,
+        "caption": "three lists of white and blue cars stop beside the road in a parking .",
+        "entity_index": 0,
+        "entity": "lists of cars",
+        "status": "unmatched",
+        "caption_train": "three lists of white and blue cars stop beside the road in a parking",
+        "caption_full": "three lists of white and blue cars stop beside the road in a parking",
+        "entity_clean": "lists of cars",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 3
+      },
+      {
+        "record_index": 2936,
+        "source_index": null,
+        "caption": "two dark blue baksetball courts is laocted quite closely to the football field .",
+        "entity_index": 0,
+        "entity": "basketball courts",
+        "status": "unmatched",
+        "caption_train": "two dark blue baksetball courts is laocted quite closely to the football field",
+        "caption_full": "two dark blue baksetball courts is laocted quite closely to the football field",
+        "entity_clean": "basketball courts",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 3594,
+        "source_index": null,
+        "caption": "the square shpaped complicated termial building is surrounded by runways .",
+        "entity_index": 0,
+        "entity": "terminal building",
+        "status": "unmatched",
+        "caption_train": "the square shpaped complicated termial building is surrounded by runways",
+        "caption_full": "the square shpaped complicated termial building is surrounded by runways",
+        "entity_clean": "terminal building",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 3719,
+        "source_index": null,
+        "caption": "this area is mainly made up of a football field and two baksetball courts, standing closely to many edifices .",
+        "entity_index": 2,
+        "entity": "basketball courts",
+        "status": "unmatched",
+        "caption_train": "this area is mainly made up of a football field and two baksetball courts standing closely to many edifices",
+        "caption_full": "this area is mainly made up of a football field and two baksetball courts standing closely to many edifices",
+        "entity_clean": "basketball courts",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 3828,
+        "source_index": null,
+        "caption": "one pond is surrounded by houses with lawns while the other is enclosed by bare ground and woods .",
+        "entity_index": 3,
+        "entity": "other pond",
+        "status": "unmatched",
+        "caption_train": "one pond is surrounded by houses with lawns while the other is enclosed by bare ground and woods",
+        "caption_full": "one pond is surrounded by houses with lawns while the other is enclosed by bare ground and woods",
+        "entity_clean": "other pond",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 2
+      },
+      {
+        "record_index": 4006,
+        "source_index": null,
+        "caption": "the community has been devided into several rectangules by rows of houses, integrated withdense woods .",
+        "entity_index": 1,
+        "entity": "rectangles",
+        "status": "unmatched",
+        "caption_train": "the community has been devided into several rectangules by rows of houses integrated withdense woods",
+        "caption_full": "the community has been devided into several rectangules by rows of houses integrated withdense woods",
+        "entity_clean": "rectangles",
+        "string_in_train": false,
+        "string_in_full": false,
+        "span_length": 3
+      },
+      {
+        "record_index": 4215,
+        "source_index": null,
+        "caption": "an almost rectangle gray center building surrounded by green trainss is next to a river .",
+        "entity_index": 1,
+        "entity": "trains",
+        "status": "unmatched",
+        "caption_train": "an almost rectangle gray center building surrounded by green trainss is next to a river",
+        "caption_full": "an almost rectangle gray center building surrounded by green trainss is next to a river",
+        "entity_clean": "trains",
+        "string_in_train": true,
+        "string_in_full": true,
+        "span_length": 1
+      }
+    ],
+    "invalid_caption": [],
+    "invalid_entity": [
+      {
+        "record_index": 7557,
+        "source_index": null,
+        "caption": "dense forests and vast .",
+        "entity_index": 1,
+        "entity": ".",
+        "status": "invalid_entity"
+      }
+    ],
+    "empty_entity_tokens": []
+  }
+}

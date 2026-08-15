@@ -275,6 +275,176 @@ class CLIPBackbone(nn.Module):
 
         return image_features
 
+    def encode_image_with_patches(
+        self,
+        images,
+        normalize=True,
+    ):
+        """
+        Encode images once and return both:
+
+            global image features:
+                [B, D]
+
+            spatial patch features:
+                [B, N_patch, D]
+
+        For ViT-B/32 with 224x224 input:
+            N_patch = 7 * 7 = 49
+            D = 512
+
+        The final Transformer block is taken through
+        OpenCLIP's forward_intermediates() interface.
+
+        Intermediate patch tokens are normalized by the
+        visual tower's final LayerNorm, then explicitly
+        projected through visual.proj into the CLIP joint
+        embedding space.
+        """
+
+        visual = self.model.visual
+
+        if not hasattr(
+            visual,
+            "forward_intermediates",
+        ):
+            raise RuntimeError(
+                "Current visual encoder does not expose "
+                "forward_intermediates()."
+            )
+
+        outputs = visual.forward_intermediates(
+            images,
+            indices=1,
+            stop_early=False,
+            normalize_intermediates=True,
+            intermediates_only=False,
+            output_fmt="NLC",
+            output_extra_tokens=False,
+        )
+
+        if "image_features" not in outputs:
+            raise RuntimeError(
+                "forward_intermediates() did not return "
+                "'image_features'."
+            )
+
+        intermediates = outputs.get(
+            "image_intermediates"
+        )
+
+        if (
+            not isinstance(intermediates, list)
+            or len(intermediates) == 0
+        ):
+            raise RuntimeError(
+                "forward_intermediates() did not return "
+                "a valid image_intermediates list."
+            )
+
+        image_features = outputs[
+            "image_features"
+        ]
+
+        patch_features = intermediates[-1]
+
+        if patch_features.ndim != 3:
+            raise RuntimeError(
+                "Expected patch features in NLC format "
+                "[B, N_patch, width], got "
+                f"{tuple(patch_features.shape)}"
+            )
+
+        # --------------------------------------------------
+        # Project patch tokens from visual width
+        # (e.g. 768) into CLIP joint embedding dimension
+        # (e.g. 512), matching global text/entity features.
+        # --------------------------------------------------
+
+        visual_proj = getattr(
+            visual,
+            "proj",
+            None,
+        )
+
+        if visual_proj is not None:
+            patch_features = (
+                patch_features
+                @ visual_proj
+            )
+
+        if normalize:
+            image_features = F.normalize(
+                image_features,
+                dim=-1,
+            )
+
+            patch_features = F.normalize(
+                patch_features,
+                dim=-1,
+            )
+
+        return (
+            image_features,
+            patch_features,
+        )
+
+    def encode_text_with_tokens(self, captions, normalize=True):
+        """
+        Caption 只经过一次 Text Transformer，同时返回全局文本特征和 token 特征。
+
+        Returns:
+            text_features:  [B, D]
+            token_features: [B, L, D]
+        """
+        if isinstance(captions, (list, tuple)):
+            device = next(self.model.parameters()).device
+            text_tokens = self.tokenize(captions, device=device)
+        elif torch.is_tensor(captions):
+            text_tokens = captions
+        else:
+            raise TypeError(
+                "captions must be list[str], tuple[str], or torch.Tensor"
+            )
+
+        if not hasattr(self.model, "forward_intermediates"):
+            raise RuntimeError(
+                "Current OpenCLIP model does not expose forward_intermediates()."
+            )
+
+        outputs = self.model.forward_intermediates(
+            text=text_tokens,
+            text_indices=1,
+            normalize=normalize,
+            normalize_intermediates=True,
+            intermediates_only=False,
+        )
+
+        text_features = outputs.get("text_features")
+        intermediates = outputs.get("text_intermediates")
+
+        if text_features is None:
+            raise RuntimeError("forward_intermediates() did not return text_features.")
+        if not isinstance(intermediates, list) or not intermediates:
+            raise RuntimeError(
+                "forward_intermediates() did not return text_intermediates."
+            )
+
+        # 最后一层 token 已经过 ln_final，再使用 CLIP 原文本投影映射到联合空间。
+        token_features = intermediates[-1]
+        text_projection = getattr(self.model, "text_projection", None)
+
+        if text_projection is not None:
+            if isinstance(text_projection, nn.Linear):
+                token_features = text_projection(token_features)
+            else:
+                token_features = token_features @ text_projection
+
+        if normalize:
+            token_features = F.normalize(token_features, dim=-1)
+
+        return text_features, token_features
+
     def encode_text(
         self,
         captions,

@@ -11,6 +11,7 @@ dataset:
 
   val_file: E:/paper3/data/rsicd/rsicd_val.json
   test_file: E:/paper3/data/rsicd/rsicd_test.json
+  entity_index_file: E:/paper3/data/rsicd/entity_prototype/rsicd_entity_training_index.json
 
   image_res: 224
   max_words: 30

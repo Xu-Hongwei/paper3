@@ -389,6 +389,147 @@ class CLIPBackbone(nn.Module):
             patch_features,
         )
 
+    def encode_image_intermediate_patches(
+        self,
+        images,
+        layers=(6, 8, 10, 12),
+        normalize=True,
+    ):
+        """
+        一次 Vision Transformer 前向，同时返回多层 Patch 特征。
+
+        Args:
+            images:
+                [B, C, H, W]
+
+            layers:
+                1-based Transformer layer numbers.
+                ViT-B/32 共 12 层，默认取第 6/8/10/12 层。
+
+            normalize:
+                是否对最终全局特征和各层 Patch 特征做 L2 Normalize。
+
+        Returns:
+            image_features:
+                [B, D]
+
+            patch_features:
+                dict[int, Tensor]
+                例如：
+                    {
+                        6:  [B, 49, 512],
+                        8:  [B, 49, 512],
+                        10: [B, 49, 512],
+                        12: [B, 49, 512],
+                    }
+
+        Notes:
+            1. OpenCLIP 内部 block index 为 0-based，因此 layer 6 对应 index 5。
+            2. 中间层 token 先经过 visual.ln_post，再通过 visual.proj
+               映射到 CLIP joint embedding space。
+            3. 该接口仅用于 Local/Patch 诊断，不改变现有
+               encode_image_with_patches() 的行为。
+        """
+        visual = self.model.visual
+
+        if not hasattr(visual, "forward_intermediates"):
+            raise RuntimeError(
+                "Current visual encoder does not expose "
+                "forward_intermediates()."
+            )
+
+        if not isinstance(layers, (list, tuple)):
+            raise TypeError("layers must be a list or tuple of integers.")
+        if len(layers) == 0:
+            raise ValueError("layers must not be empty.")
+        if any(not isinstance(layer, int) for layer in layers):
+            raise TypeError("Every layer number must be an integer.")
+        if len(set(layers)) != len(layers):
+            raise ValueError(
+                f"Duplicate layer numbers are not allowed: {layers}"
+            )
+
+        transformer = getattr(visual, "transformer", None)
+        resblocks = getattr(transformer, "resblocks", None)
+        if resblocks is None:
+            raise RuntimeError(
+                "Current visual encoder does not expose transformer.resblocks."
+            )
+
+        num_layers = len(resblocks)
+        invalid_layers = [
+            layer for layer in layers
+            if layer < 1 or layer > num_layers
+        ]
+        if invalid_layers:
+            raise ValueError(
+                f"Invalid visual Transformer layers {invalid_layers}; "
+                f"valid range is [1, {num_layers}]."
+            )
+
+        # 用户接口采用 1-based layer number；
+        # OpenCLIP forward_intermediates 使用 0-based block index。
+        indices = [layer - 1 for layer in layers]
+
+        outputs = visual.forward_intermediates(
+            images,
+            indices=indices,
+            stop_early=False,
+            normalize_intermediates=True,
+            intermediates_only=False,
+            output_fmt="NLC",
+            output_extra_tokens=False,
+        )
+
+        image_features = outputs.get("image_features")
+        intermediates = outputs.get("image_intermediates")
+
+        if image_features is None:
+            raise RuntimeError(
+                "forward_intermediates() did not return 'image_features'."
+            )
+
+        if (
+            not isinstance(intermediates, list)
+            or len(intermediates) != len(layers)
+        ):
+            actual = 0 if intermediates is None else len(intermediates)
+            raise RuntimeError(
+                "Unexpected number of image intermediates: "
+                f"expected {len(layers)}, got {actual}."
+            )
+
+        visual_proj = getattr(visual, "proj", None)
+        patch_features = {}
+
+        for layer, features in zip(layers, intermediates):
+            if features.ndim != 3:
+                raise RuntimeError(
+                    f"Layer {layer}: expected NLC Patch features "
+                    f"[B, N_patch, width], got {tuple(features.shape)}."
+                )
+
+            # 中间层 token 已通过 visual.ln_post；
+            # 再映射到与 CLIP global/text 相同的 joint space。
+            if visual_proj is not None:
+                features = features @ visual_proj
+
+            if normalize:
+                features = F.normalize(
+                    features,
+                    dim=-1,
+                )
+
+            patch_features[layer] = features
+
+        if normalize:
+            image_features = F.normalize(
+                image_features,
+                dim=-1,
+            )
+
+        return image_features, patch_features
+
     def encode_text_with_tokens(self, captions, normalize=True):
         """
         Caption 只经过一次 Text Transformer，同时返回全局文本特征和 token 特征。

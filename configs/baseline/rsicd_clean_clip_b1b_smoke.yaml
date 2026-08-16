@@ -1,5 +1,5 @@
 experiment:
-  name: clip_rsicd_adapter_entity_grounding_10ep_0.0
+  name: clip_rsicd_clean_b1b_smoke
 
 dataset:
   name: rsicd
@@ -8,7 +8,6 @@ dataset:
     - E:/paper3/data/rsicd/rsicd_train.json
   val_file: E:/paper3/data/rsicd/rsicd_val.json
   test_file: E:/paper3/data/rsicd/rsicd_test.json
-  entity_index_file: E:/paper3/data/rsicd/entity_prototype/rsicd_entity_span_index.pt
   image_res: 224
   max_words: 30
 
@@ -19,28 +18,49 @@ model:
   pretrained_local_path: C:/Users/Administrator/.cache/clip/ViT-B-32.pt
   prefer_local_pretrained: true
 
+  # 纯 RSICD CLIP baseline。
   init_checkpoint: E:/paper3/outputs/clip_rsicd_10ep/best.pth
+
+  # 默认冻结整个 CLIP，再由模型显式解冻最后 3 个 Vision Block。
   freeze_backbone: true
 
-  visual_adapter_dim: 128
-  text_adapter_dim: 64
-  grounding_temperature: 0.02
+  # Local Self-Distillation。
+  local_image_size: 224
+  local_grid_size: 7
+  local_num_regions: 2
+  local_min_scale: 0.20
+  local_max_scale: 0.60
+
+  # ViT-B/32 共 12 个 Vision Transformer Block。
+  # 当前仅训练 Block 10~12。
+  local_trainable_blocks: 3
 
 training:
-  epochs: 10
+  # 结构验证：只跑 10 step。
+  epochs: 1
+  max_steps: 10
+
   batch_size: 64
   eval_batch_size: 128
   text_batch_size: 256
   num_workers: 8
   eval_every: 1
+  log_interval: 1
+
+  # Clean B1b 不使用旧 Entity Grounding。
   entity_loss_weight: 0.0
-  log_interval: 50
+
+  # 只使用 Local Self-Distillation + Global Preservation 做反向传播。
+  local_distill_only: true
+  local_distill_weight: 1.0
+  global_preserve_weight: 10.0
+
   early_stop_patience: null
   early_stop_min_delta: 0.0
 
 optimizer:
   name: adamw
-  lr: 1.0e-4
+  lr: 1.0e-5
   weight_decay: 0.01
 
 scheduler:

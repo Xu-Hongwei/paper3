@@ -1,5 +1,5 @@
 experiment:
-  name: clip_rsicd_adapter_entity_grounding_10ep_0.0
+  name: clip_rsicd_last3_distill_10ep
 
 dataset:
   name: rsicd
@@ -19,28 +19,55 @@ model:
   pretrained_local_path: C:/Users/Administrator/.cache/clip/ViT-B-32.pt
   prefer_local_pretrained: true
 
-  init_checkpoint: E:/paper3/outputs/clip_rsicd_10ep/best.pth
+  # 从已验证的 Global-only Adapter checkpoint 初始化 Student。
+  init_checkpoint: E:/paper3/outputs/clip_rsicd_adapter_entity_grounding_10ep_0.0/best.pth
   freeze_backbone: true
 
+  # Global Adapter 保留，但 B1b local-only 模式下冻结。
   visual_adapter_dim: 128
   text_adapter_dim: 64
   grounding_temperature: 0.02
 
+  # Local Self-Distillation 区域设置。
+  local_image_size: 224
+  local_grid_size: 7
+  local_num_regions: 2
+  local_min_scale: 0.20
+  local_max_scale: 0.60
+
+  # B1b 不使用后置 Local Head。
+  local_use_head: false
+
+  # ViT-B/32 共 12 个 Vision Transformer Block，
+  # 仅训练最后 3 个：Block 10~12。
+  local_trainable_blocks: 3
+
 training:
   epochs: 10
+  max_steps: null
+
   batch_size: 64
   eval_batch_size: 128
   text_batch_size: 256
   num_workers: 8
   eval_every: 1
-  entity_loss_weight: 0.0
   log_interval: 50
+
+  # 当前阶段完全关闭旧 Entity Grounding。
+  entity_loss_weight: 0.0
+
+  # B1b:
+  # L = 1.0 * L_local + 10.0 * L_preserve
+  local_distill_only: true
+  local_distill_weight: 1.0
+  global_preserve_weight: 10.0
+
   early_stop_patience: null
   early_stop_min_delta: 0.0
 
 optimizer:
   name: adamw
-  lr: 1.0e-4
+  lr: 1.0e-5
   weight_decay: 0.01
 
 scheduler:

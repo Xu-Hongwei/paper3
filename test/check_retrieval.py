@@ -79,9 +79,8 @@ def parse_args():
         type=str,
         default=None,
         help=(
-            "Optional checkpoint path. "
-            "If omitted, evaluate the original "
-            "pretrained CLIP model."
+            "Optional baseline or Adapter checkpoint path. "
+            "If omitted, evaluate zero-init Adapter on pretrained CLIP."
         ),
     )
 
@@ -113,125 +112,54 @@ def parse_args():
 # Load checkpoint
 # ============================================================
 
-def load_checkpoint(
-    model,
-    checkpoint_path,
-):
-    """
-    Load a training checkpoint into CLIPRetrieval.
-
-    Expected checkpoint format:
-
-        {
-            "epoch": ...,
-            "model": model.state_dict(),
-            "optimizer": ...,
-            "scheduler": ...,
-            "metrics": ...,
-            "config": ...
-        }
-
-    Returns:
-        checkpoint dictionary.
-    """
-
-    checkpoint_path = Path(
-        checkpoint_path
-    )
-
+def load_checkpoint(model, checkpoint_path):
+    """加载旧 baseline 或包含 Adapter 的新训练 checkpoint。"""
+    checkpoint_path = Path(checkpoint_path)
     if not checkpoint_path.exists():
+        raise FileNotFoundError(f"Checkpoint does not exist: {checkpoint_path}")
 
-        raise FileNotFoundError(
-            f"Checkpoint does not exist: "
-            f"{checkpoint_path}"
-        )
-
-    print()
-    print("=" * 70)
+    print("\n" + "=" * 70)
     print("LOADING CHECKPOINT")
     print("=" * 70)
-
-    print(
-        f"Path         : "
-        f"{checkpoint_path}"
-    )
+    print(f"Path         : {checkpoint_path}")
 
     checkpoint = torch.load(
         checkpoint_path,
         map_location="cpu",
+        weights_only=False,
     )
+    state_dict = checkpoint.get("model", checkpoint)
 
-    # --------------------------------------------------------
-    # Our training checkpoint contains:
-    #
-    # checkpoint["model"]
-    #
-    # But allow raw state_dict as fallback.
-    # --------------------------------------------------------
-
-    if (
-        isinstance(checkpoint, dict)
-        and "model" in checkpoint
-    ):
-
-        state_dict = checkpoint[
-            "model"
-        ]
-
-    else:
-
-        state_dict = checkpoint
-
-    # --------------------------------------------------------
-    # Strict loading:
-    #
-    # Any missing or unexpected parameter means
-    # checkpoint/model architecture is inconsistent.
-    # --------------------------------------------------------
-
-    model.load_state_dict(
+    missing, unexpected = model.load_state_dict(
         state_dict,
-        strict=True,
+        strict=False,
     )
 
-    # --------------------------------------------------------
-    # Print checkpoint information
-    # --------------------------------------------------------
+    # 旧 CLIP baseline 没有 Adapter 参数，这是唯一允许的缺失。
+    invalid_missing = [
+        name for name in missing
+        if not name.startswith(("visual_adapter.", "text_adapter."))
+    ]
+    if invalid_missing or unexpected:
+        raise RuntimeError(
+            f"Checkpoint/model architecture mismatch, "
+            f"missing={invalid_missing}, unexpected={unexpected}"
+        )
 
-    if isinstance(
-        checkpoint,
-        dict,
-    ):
+    if missing:
+        print("Adapter weights : not found, using zero initialization")
+    else:
+        print("Adapter weights : loaded")
 
+    if isinstance(checkpoint, dict):
         if "epoch" in checkpoint:
+            print(f"Epoch        : {checkpoint['epoch']}")
 
-            print(
-                f"Epoch        : "
-                f"{checkpoint['epoch']}"
-            )
+        metrics = checkpoint.get("metrics")
+        if isinstance(metrics, dict) and "mR" in metrics:
+            print(f"Stored Val mR: {metrics['mR']:.2f}")
 
-        if "metrics" in checkpoint:
-
-            checkpoint_metrics = (
-                checkpoint["metrics"]
-            )
-
-            if (
-                checkpoint_metrics
-                is not None
-                and "mR"
-                in checkpoint_metrics
-            ):
-
-                print(
-                    f"Stored Val mR: "
-                    f"{checkpoint_metrics['mR']:.2f}"
-                )
-
-    print(
-        "Checkpoint loaded successfully."
-    )
-
+    print("Checkpoint loaded successfully.")
     return checkpoint
 
 

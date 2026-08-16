@@ -1,5 +1,5 @@
 experiment:
-  name: clip_rsicd_adapter_entity_grounding_10ep_0.0
+  name: clip_rsicd_local_distill_10ep
 
 dataset:
   name: rsicd
@@ -19,12 +19,21 @@ model:
   pretrained_local_path: C:/Users/Administrator/.cache/clip/ViT-B-32.pt
   prefer_local_pretrained: true
 
-  init_checkpoint: E:/paper3/outputs/clip_rsicd_10ep/best.pth
+  # 从已验证有效的 Global-only Adapter best checkpoint 初始化。
+  init_checkpoint: E:/paper3/outputs/clip_rsicd_adapter_entity_grounding_10ep_0.0/best.pth
   freeze_backbone: true
 
+  # Global Adapter 结构保持不变，B1 中会被冻结。
   visual_adapter_dim: 128
   text_adapter_dim: 64
   grounding_temperature: 0.02
+
+  # B1 Local Self-Distillation。
+  local_image_size: 224
+  local_grid_size: 7
+  local_num_regions: 2
+  local_min_scale: 0.20
+  local_max_scale: 0.60
 
 training:
   epochs: 10
@@ -33,8 +42,15 @@ training:
   text_batch_size: 256
   num_workers: 8
   eval_every: 1
-  entity_loss_weight: 0.0
   log_interval: 50
+
+  # 当前阶段关闭旧 Entity Grounding。
+  entity_loss_weight: 0.0
+
+  # B1：只训练 Local Head。
+  local_distill_only: true
+  local_distill_weight: 1.0
+
   early_stop_patience: null
   early_stop_min_delta: 0.0
 

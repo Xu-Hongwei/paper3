@@ -12,11 +12,11 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 Image.MAX_IMAGE_PIXELS = None
 
 
-def resolve_image_path(image_root: str, image_reference: str) -> str:
-    """兼容 image_root/split/xxx.jpg 和 image_root/xxx.jpg 两种布局。"""
-    image_path = os.path.join(image_root, image_reference)
-    if os.path.isfile(image_path):
-        return image_path
+def resolve_image_path(image_root, image_reference):
+    """兼容 image_root/split/xxx.jpg 与 image_root/xxx.jpg。"""
+    nested_path = os.path.join(image_root, image_reference)
+    if os.path.isfile(nested_path):
+        return nested_path
 
     flat_path = os.path.join(image_root, os.path.basename(image_reference))
     if os.path.isfile(flat_path):
@@ -24,22 +24,12 @@ def resolve_image_path(image_root: str, image_reference: str) -> str:
 
     raise FileNotFoundError(
         f"Image not found: {image_reference!r}; "
-        f"tried {image_path!r} and {flat_path!r}"
+        f"tried {nested_path!r} and {flat_path!r}"
     )
 
 
 def re_train_collate_fn(batch):
-    """
-    将每个样本的变长 Entity span 拼成紧凑 batch。
-
-    返回：
-        images             [B, C, H, W]
-        captions           List[str]
-        image_ids          [B]
-        entity_spans       [N_entity, 2]
-        entity_sample_ids  [N_entity]
-        entity_counts      [B]
-    """
+    """合并训练 batch，并压紧变长 Entity spans。"""
     images, captions, image_ids, spans = zip(*batch)
 
     images = torch.stack(images, dim=0)
@@ -51,8 +41,7 @@ def re_train_collate_fn(batch):
         dtype=torch.long,
     )
 
-    total_entities = int(entity_counts.sum().item())
-    if total_entities > 0:
+    if entity_counts.sum().item() > 0:
         entity_spans = torch.cat(spans, dim=0)
         entity_sample_ids = torch.repeat_interleave(
             torch.arange(len(batch), dtype=torch.long),
@@ -60,7 +49,7 @@ def re_train_collate_fn(batch):
         )
     else:
         entity_spans = torch.empty((0, 2), dtype=torch.long)
-        entity_sample_ids = torch.empty((0,), dtype=torch.long)
+        entity_sample_ids = torch.empty(0, dtype=torch.long)
 
     return (
         images,
@@ -73,7 +62,16 @@ def re_train_collate_fn(batch):
 
 
 class re_train_dataset(Dataset):
-    """RSITR 训练集：使用紧凑 Entity token-span 索引，不再传递 Entity 字符串。"""
+    """
+    RSITR 训练集。
+
+    保留两类 Entity 信息：
+        1. token spans：训练 / contextual Entity 特征可直接使用；
+        2. Entity 文本：后续 Independent Entity / Region Grounding 可读取。
+
+    为避免字符串进入训练热路径，__getitem__ 仍只返回 spans。
+    Entity 文本通过 get_entity_texts(index) 按需读取。
+    """
 
     def __init__(
         self,
@@ -85,32 +83,38 @@ class re_train_dataset(Dataset):
     ):
         super().__init__()
 
-        if isinstance(ann_file, str):
-            ann_file = [ann_file]
-
         self.transform = transform
         self.image_root = image_root
         self.max_words = max_words
 
+        ann_files = [ann_file] if isinstance(ann_file, str) else ann_file
         raw_ann = []
-        for file_path in ann_file:
+
+        for file_path in ann_files:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+
             if not isinstance(data, list):
-                raise ValueError(f"Training annotation must be a list: {file_path}")
+                raise ValueError(
+                    f"Training annotation must be a list: {file_path}"
+                )
+
             raw_ann.extend(data)
 
         if not raw_ann:
             raise ValueError("Training annotation is empty.")
 
         self.num_raw_pairs = len(raw_ann)
-        self._load_entity_span_index(entity_index_file)
+        self._load_entity_index(entity_index_file)
 
-        # 保留原始 pair_index，因为 compact index 对应原始标注顺序。
-        valid_ann = []
+        # compact Entity index 依赖原始 pair 顺序，因此保留 _pair_index。
+        self.ann = []
+
         for pair_index, ann in enumerate(raw_ann):
             if "caption" not in ann:
-                raise KeyError(f"Missing key 'caption' at training index {pair_index}")
+                raise KeyError(
+                    f"Missing key 'caption' at training index {pair_index}"
+                )
 
             try:
                 caption = pre_caption(ann["caption"], self.max_words)
@@ -120,35 +124,49 @@ class re_train_dataset(Dataset):
             item = dict(ann)
             item["caption"] = caption
             item["_pair_index"] = pair_index
-            valid_ann.append(item)
+            self.ann.append(item)
 
-        if not valid_ann:
+        if not self.ann:
             raise ValueError("Training annotation has no valid captions.")
 
-        self.ann = valid_ann
         self.num_filtered_pairs = self.num_raw_pairs - len(self.ann)
+        self._build_image_ids()
+        self._print_report()
 
-        self.image_ids = []
+    def _build_image_ids(self):
+        """为同一图像的多条 caption 分配相同 image_id。"""
         image_to_id = {}
-        for ann_index, ann in enumerate(self.ann):
+        self.image_ids = []
+
+        for index, ann in enumerate(self.ann):
             if "image" not in ann:
-                raise KeyError(f"Missing key 'image' at training index {ann_index}")
+                raise KeyError(
+                    f"Missing key 'image' at training index {index}"
+                )
 
             image_key = ann["image"]
             if image_key not in image_to_id:
                 image_to_id[image_key] = len(image_to_id)
+
             self.image_ids.append(image_to_id[image_key])
 
         self.num_images = len(image_to_id)
-        self._print_report()
 
-    def _load_entity_span_index(self, entity_index_file):
+    def _load_entity_index(self, entity_index_file):
+        """读取 Entity span/text 索引；兼容旧 v1 span-only 格式。"""
         self.entity_index_file = entity_index_file
+
         self.pair_to_semantic = None
         self.semantic_offsets = None
         self.span_start = None
         self.span_end = None
-        self.entity_index_stats = None
+
+        self.entity_vocab = None
+        self.semantic_entity_offsets = None
+        self.semantic_entity_ids = None
+
+        self.entity_index_stats = {}
+        self.entity_index_format = None
 
         if entity_index_file is None:
             return
@@ -159,27 +177,40 @@ class re_train_dataset(Dataset):
             weights_only=True,
         )
 
-        required = (
+        required = {
             "pair_to_semantic",
             "semantic_offsets",
             "span_start",
             "span_end",
-        )
-        missing = [key for key in required if key not in index]
+        }
+        missing = sorted(required - set(index))
         if missing:
-            raise ValueError(f"Entity span index missing keys: {missing}")
+            raise ValueError(f"Entity index missing keys: {missing}")
 
         self.pair_to_semantic = index["pair_to_semantic"]
         self.semantic_offsets = index["semantic_offsets"]
         self.span_start = index["span_start"]
         self.span_end = index["span_end"]
+
         self.entity_index_stats = index.get("statistics", {})
+        metadata = index.get("metadata", {})
+        self.entity_index_format = metadata.get("format", "entity_span_index_v1")
+
+        # v2 才包含可直接恢复的 Entity 文本。
+        if {
+            "entity_vocab",
+            "semantic_entity_offsets",
+            "semantic_entity_ids",
+        }.issubset(index):
+            self.entity_vocab = index["entity_vocab"]
+            self.semantic_entity_offsets = index["semantic_entity_offsets"]
+            self.semantic_entity_ids = index["semantic_entity_ids"]
 
         if self.pair_to_semantic.ndim != 1:
             raise ValueError("pair_to_semantic must be 1D.")
         if len(self.pair_to_semantic) != self.num_raw_pairs:
             raise ValueError(
-                "Entity span index / annotation length mismatch: "
+                "Entity index / annotation length mismatch: "
                 f"{len(self.pair_to_semantic)} vs {self.num_raw_pairs}"
             )
         if self.semantic_offsets.ndim != 1:
@@ -189,23 +220,35 @@ class re_train_dataset(Dataset):
         if len(self.span_start) != len(self.span_end):
             raise ValueError("span_start/span_end length mismatch.")
 
-        metadata = index.get("metadata", {})
         index_max_words = metadata.get("max_words")
         if index_max_words is not None and int(index_max_words) != self.max_words:
             raise ValueError(
                 f"max_words mismatch: dataset={self.max_words}, "
-                f"span_index={index_max_words}"
+                f"entity_index={index_max_words}"
             )
 
-    def _get_entity_spans(self, pair_index: int) -> torch.Tensor:
-        """返回当前 pair 的有效 Entity spans，格式为 [E, 2] 的 [start, end)。"""
+    def _semantic_index(self, pair_index):
         if self.pair_to_semantic is None:
-            return torch.empty((0, 2), dtype=torch.long)
+            return None
 
         semantic_index = int(self.pair_to_semantic[pair_index].item())
-        if semantic_index < 0 or semantic_index + 1 >= len(self.semantic_offsets):
+        if semantic_index < 0:
             raise IndexError(
-                f"Invalid semantic index: pair={pair_index}, semantic={semantic_index}"
+                f"Invalid semantic index: pair={pair_index}, "
+                f"semantic={semantic_index}"
+            )
+
+        return semantic_index
+
+    def _get_entity_spans_by_pair(self, pair_index):
+        """返回当前 caption 的有效 Entity spans：[E, 2] 的 [start, end)。"""
+        semantic_index = self._semantic_index(pair_index)
+        if semantic_index is None:
+            return torch.empty((0, 2), dtype=torch.long)
+
+        if semantic_index + 1 >= len(self.semantic_offsets):
+            raise IndexError(
+                f"Invalid semantic offset index: {semantic_index}"
             )
 
         begin = int(self.semantic_offsets[semantic_index].item())
@@ -214,9 +257,30 @@ class re_train_dataset(Dataset):
         if begin == end:
             return torch.empty((0, 2), dtype=torch.long)
 
-        starts = self.span_start[begin:end].to(dtype=torch.long)
-        ends = self.span_end[begin:end].to(dtype=torch.long)
+        starts = self.span_start[begin:end].long()
+        ends = self.span_end[begin:end].long()
         return torch.stack((starts, ends), dim=1)
+
+    def get_entity_texts(self, index):
+        """
+        返回第 index 条有效训练 caption 的完整 EAR Entity 文本。
+
+        v2 index 示例：
+            ["storage tanks", "pond", "buildings"]
+
+        旧 v1 span-only index 无 Entity 文本，因此返回空列表。
+        """
+        if self.entity_vocab is None:
+            return []
+
+        pair_index = self.ann[index]["_pair_index"]
+        semantic_index = self._semantic_index(pair_index)
+
+        begin = int(self.semantic_entity_offsets[semantic_index].item())
+        end = int(self.semantic_entity_offsets[semantic_index + 1].item())
+
+        entity_ids = self.semantic_entity_ids[begin:end].tolist()
+        return [self.entity_vocab[entity_id] for entity_id in entity_ids]
 
     def _print_report(self):
         print()
@@ -228,15 +292,19 @@ class re_train_dataset(Dataset):
         print(f"Filtered captions     : {self.num_filtered_pairs}")
         print(f"Unique training images: {self.num_images}")
 
-        if self.pair_to_semantic is not None:
+        if self.pair_to_semantic is None:
+            print("Entity index          : disabled")
+        else:
             valid_entities = self.entity_index_stats.get(
                 "valid_unique_entities",
                 len(self.span_start),
             )
-            print(f"Entity span index     : enabled")
+            print(f"Entity index format   : {self.entity_index_format}")
             print(f"Valid entity spans    : {valid_entities}")
-        else:
-            print("Entity span index     : disabled")
+            print(
+                "Entity text lookup     : "
+                f"{'enabled' if self.entity_vocab is not None else 'disabled'}"
+            )
 
         print("=" * 72)
 
@@ -245,10 +313,10 @@ class re_train_dataset(Dataset):
 
     def __getitem__(self, index):
         ann = self.ann[index]
-        pair_index = ann["_pair_index"]
 
         image_path = resolve_image_path(self.image_root, ann["image"])
         image = Image.open(image_path).convert("RGB")
+
         if self.transform is not None:
             image = self.transform(image)
 
@@ -256,12 +324,12 @@ class re_train_dataset(Dataset):
             image,
             ann["caption"],
             self.image_ids[index],
-            self._get_entity_spans(pair_index),
+            self._get_entity_spans_by_pair(ann["_pair_index"]),
         )
 
 
 class re_eval_dataset(Dataset):
-    """验证/测试集保持原有检索评测逻辑，不使用 Entity span。"""
+    """验证 / 测试集使用标准检索评测，不引入 Entity 信息。"""
 
     def __init__(self, ann_file, transform, image_root, max_words=30):
         super().__init__()
@@ -270,35 +338,43 @@ class re_eval_dataset(Dataset):
             self.ann = json.load(f)
 
         if not isinstance(self.ann, list):
-            raise ValueError(f"Evaluation annotation must be a list: {ann_file}")
+            raise ValueError(
+                f"Evaluation annotation must be a list: {ann_file}"
+            )
 
         self.transform = transform
         self.image_root = image_root
         self.max_words = max_words
+
         self.text = []
         self.image = []
         self.txt2img = {}
         self.img2txt = {}
 
         txt_id = 0
+
         for img_id, ann in enumerate(self.ann):
             if "image" not in ann or "caption" not in ann:
-                raise KeyError(f"Invalid evaluation annotation at index {img_id}")
+                raise KeyError(
+                    f"Invalid evaluation annotation at index {img_id}"
+                )
 
             captions = ann["caption"]
             if not isinstance(captions, list):
-                raise ValueError(f"'caption' must be a list for sample {img_id}")
+                raise ValueError(
+                    f"'caption' must be a list for sample {img_id}"
+                )
 
             self.image.append(ann["image"])
             self.img2txt[img_id] = []
 
             for caption in captions:
                 try:
-                    clean_caption = pre_caption(caption, self.max_words)
+                    caption = pre_caption(caption, self.max_words)
                 except ValueError:
                     continue
 
-                self.text.append(clean_caption)
+                self.text.append(caption)
                 self.img2txt[img_id].append(txt_id)
                 self.txt2img[txt_id] = img_id
                 txt_id += 1
@@ -317,6 +393,8 @@ class re_eval_dataset(Dataset):
             self.ann[index]["image"],
         )
         image = Image.open(image_path).convert("RGB")
+
         if self.transform is not None:
             image = self.transform(image)
+
         return image, index

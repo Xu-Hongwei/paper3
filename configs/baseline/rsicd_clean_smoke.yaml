@@ -1,11 +1,10 @@
 experiment:
-  name: clip_rsicd_clean
+  name: clip_rsicd_clean_smoke
 
 seed: 42
 
 dataset:
   name: RSICD
-
   image_root: E:/datasets/remote_sensing_captioning/RSICD/images
 
   train_file: E:/paper3/data/rsicd/rsicd_train.json
@@ -21,27 +20,21 @@ dataset:
 model:
   backbone: ViT-B-32-quickgelu
   pretrained: openai
-
-  # 如果本机已有 OpenAI CLIP 权重，可显式填写；
-  # 不填写时 backbone.py 会自动尝试本地缓存或在线加载
   pretrained_local_path: null
   prefer_local_pretrained: true
 
 training:
-  epochs: 30
-
-  batch_size: 64
-  eval_batch_size: 128
-  text_batch_size: 256
-  num_workers: 8
+  # Smoke test：只跑 1 个 epoch、3 个训练 step
+  epochs: 1
+  batch_size: 16
+  eval_batch_size: 64
+  text_batch_size: 128
+  num_workers: 4
 
   eval_every: 1
-  log_interval: 50
+  log_interval: 1
+  max_steps: 3
 
-  # null 表示完整训练一个 epoch
-  max_steps: null
-
-  # 不需要 early stopping 时保持 null
   early_stop_patience: null
   early_stop_min_delta: 0.0
 

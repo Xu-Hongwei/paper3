@@ -1,29 +1,14 @@
-import os
 import logging
+import os
 from pathlib import Path
 
+import open_clip
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import open_clip
 
-# ----------------------------------------------------------------------
-# Offline / local-pretrained support.
-#
-# `pretrained="openai"` for ViT-B-32 normally downloads weights from
-# HuggingFace (timm repo), which fails when the network is unavailable.
-# As a fallback we load the official OpenAI CLIP checkpoint cached by the
-# openai/clip package (default: ~/.cache/clip/ViT-B-32.pt), which is the
-# exact same weight set, into the native open_clip architecture.
-#
-# Local candidate resolution order:
-#   1. `pretrained_local_path` (config)  -> expanded with ~;
-#   2. env var OPEN_CLIP_PRETRAINED      -> path to a local checkpoint;
-#   3. `pretrained` value is itself an existing file path;
-#   4. default openai/clip cache file, only valid for ViT-B-32 family
-#      with pretrained="openai".
-# ----------------------------------------------------------------------
+# OpenAI CLIP 官方 ViT-B/32 的默认本地缓存位置。
 DEFAULT_LOCAL_OPENAI_VITB32 = os.path.join(
     os.path.expanduser("~"),
     ".cache",
@@ -32,79 +17,62 @@ DEFAULT_LOCAL_OPENAI_VITB32 = os.path.join(
 )
 
 
-def _resolve_local_checkpoint(model_name, pretrained, explicit_path):
-    """Return the first existing local checkpoint candidate, or None."""
-
+def _resolve_local_checkpoint(model_name, pretrained, explicit_path=None):
+    """按优先级查找可用的本地 CLIP 权重。"""
     candidates = []
 
     if explicit_path:
         candidates.append(str(Path(explicit_path).expanduser()))
 
-    env_path = os.environ.get("OPEN_CLIP_PRETRAINED", "")
+    env_path = os.environ.get("OPEN_CLIP_PRETRAINED")
     if env_path:
         candidates.append(env_path)
 
     if isinstance(pretrained, str) and os.path.isfile(pretrained):
         candidates.append(pretrained)
 
-    if (
-        pretrained == "openai"
-        and model_name.startswith("ViT-B-32")
-    ):
+    if pretrained == "openai" and model_name.startswith("ViT-B-32"):
         candidates.append(DEFAULT_LOCAL_OPENAI_VITB32)
 
-    for candidate in candidates:
-        if candidate and os.path.isfile(candidate):
-            return candidate
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
 
     return None
 
 
 def _load_local_checkpoint(model, checkpoint_path):
-    """Load an OpenAI-CLIP-style checkpoint into an open_clip model.
-
-    Supports:
-        - OpenAI CLIP TorchScript archives (the .pt files cached by the
-          openai/clip package, e.g. ~/.cache/clip/ViT-B-32.pt);
-        - open_clip / plain state-dict checkpoints (.pt / .pth / .bin);
-        - safetensors checkpoints (.safetensors).
-    """
+    """将本地 OpenAI CLIP / OpenCLIP 权重加载到当前模型。"""
+    checkpoint_path = str(checkpoint_path)
 
     if checkpoint_path.endswith(".safetensors"):
         from safetensors.torch import load_file
-
         state_dict = load_file(checkpoint_path)
     else:
         try:
-            # OpenAI CLIP archives are TorchScript modules.
-            ckpt = torch.jit.load(
-                checkpoint_path,
-                map_location="cpu",
-            )
-            state_dict = ckpt.state_dict()
+            # OpenAI CLIP 官方 .pt 通常是 TorchScript archive。
+            checkpoint = torch.jit.load(checkpoint_path, map_location="cpu")
+            state_dict = checkpoint.state_dict()
         except Exception:
-            ckpt = torch.load(
+            checkpoint = torch.load(
                 checkpoint_path,
                 map_location="cpu",
                 weights_only=True,
             )
             state_dict = (
-                ckpt.get("state_dict", ckpt)
-                if isinstance(ckpt, dict)
-                else ckpt
+                checkpoint.get("state_dict", checkpoint)
+                if isinstance(checkpoint, dict)
+                else checkpoint
             )
 
-    # Drop non-tensor metadata (e.g. input_resolution / vocab_size).
+    # 去掉 input_resolution、vocab_size 等非 Tensor 元数据。
     state_dict = {
-        k: v
-        for k, v in state_dict.items()
-        if torch.is_tensor(v)
+        name: value
+        for name, value in state_dict.items()
+        if torch.is_tensor(value)
     }
 
-    missing, unexpected = model.load_state_dict(
-        state_dict,
-        strict=False,
-    )
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
 
     if missing:
         raise RuntimeError(
@@ -123,19 +91,14 @@ def _load_local_checkpoint(model, checkpoint_path):
 
 class CLIPBackbone(nn.Module):
     """
-    CLIP backbone for remote sensing image-text retrieval.
+    RSITR 使用的 CLIP Backbone。
 
-    Responsibilities:
-        1. Load pretrained CLIP.
-        2. Encode images.
-        3. Tokenize and encode captions.
-        4. Return normalized global embeddings.
+    当前保留三类接口：
+        1. Global image/text encoding：Clean CLIP 主线；
+        2. Final patch features：后续局部诊断；
+        3. Token features：后续 Entity span / structured semantics 使用。
 
-    This module does NOT contain:
-        - contrastive loss
-        - optimizer
-        - retrieval metrics
-        - prototype / OT / entity modules
+    不包含 loss、optimizer、Teacher/Student、Adapter、Prototype 或 OT。
     """
 
     def __init__(
@@ -157,10 +120,9 @@ class CLIPBackbone(nn.Module):
         )
         self.pretrained_local_path = local_path
 
-        def _build_without_weights():
-            previous_disable_level = (
-                logging.root.manager.disable
-            )
+        def build_without_weights():
+            # OpenCLIP 在 pretrained=None 时可能输出无关 warning，这里局部屏蔽。
+            previous_level = logging.root.manager.disable
             logging.disable(logging.WARNING)
             try:
                 return open_clip.create_model_and_transforms(
@@ -168,146 +130,83 @@ class CLIPBackbone(nn.Module):
                     pretrained=None,
                 )
             finally:
-                logging.disable(
-                    previous_disable_level
-                )
+                logging.disable(previous_level)
 
-        if (
-            local_path is not None
-            and prefer_local_pretrained
-        ):
-            # Local-first: no network access required.
-            (
-                self.model,
-                self.preprocess_train,
-                self.preprocess_val,
-            ) = _build_without_weights()
-            _load_local_checkpoint(
-                self.model,
-                local_path,
+        if local_path and prefer_local_pretrained:
+            self.model, self.preprocess_train, self.preprocess_val = (
+                build_without_weights()
             )
+            _load_local_checkpoint(self.model, local_path)
             print(
                 "[CLIPBackbone] loaded pretrained weights from "
                 f"local file: {local_path}"
             )
         else:
             try:
-                (
-                    self.model,
-                    self.preprocess_train,
-                    self.preprocess_val,
-                ) = open_clip.create_model_and_transforms(
-                    model_name=model_name,
-                    pretrained=pretrained,
+                self.model, self.preprocess_train, self.preprocess_val = (
+                    open_clip.create_model_and_transforms(
+                        model_name=model_name,
+                        pretrained=pretrained,
+                    )
                 )
             except Exception as exc:
-                # Network unavailable: fall back to a local checkpoint
-                # if one exists, otherwise re-raise with guidance.
                 if local_path is None:
                     raise RuntimeError(
                         "Failed to load pretrained CLIP weights "
-                        f"({exc}). To run offline, set "
-                        "`pretrained_local_path` in the config or the "
-                        "env var OPEN_CLIP_PRETRAINED to a local "
-                        "checkpoint file."
+                        f"({exc}). Set `pretrained_local_path` or "
+                        "OPEN_CLIP_PRETRAINED for offline use."
                     ) from exc
-                (
-                    self.model,
-                    self.preprocess_train,
-                    self.preprocess_val,
-                ) = _build_without_weights()
-                _load_local_checkpoint(
-                    self.model,
-                    local_path,
+
+                self.model, self.preprocess_train, self.preprocess_val = (
+                    build_without_weights()
                 )
+                _load_local_checkpoint(self.model, local_path)
                 print(
                     "[CLIPBackbone] download failed; loaded weights "
                     f"from local file: {local_path}"
                 )
 
-        # --------------------------------------------------
-        # CLIP tokenizer
-        # --------------------------------------------------
-        self.tokenizer = open_clip.get_tokenizer(
-            model_name
-        )
+        self.tokenizer = open_clip.get_tokenizer(model_name)
 
     def tokenize(self, captions, device=None):
-        """
-        Convert raw captions to CLIP token ids.
-
-        Args:
-            captions:
-                list[str] / tuple[str]
-
-            device:
-                target torch device
-
-        Returns:
-            token tensor
-        """
-
+        """将文本转换为 CLIP token ids。"""
         tokens = self.tokenizer(captions)
+        return tokens.to(device) if device is not None else tokens
 
-        if device is not None:
-            tokens = tokens.to(device)
+    def encode_image(self, images, normalize=True):
+        """提取全局图像特征。"""
+        features = self.model.encode_image(images)
+        return F.normalize(features, dim=-1) if normalize else features
 
-        return tokens
-
-    def encode_image(
-        self,
-        images,
-        normalize=True,
-    ):
-        """
-        Encode images into CLIP global image embeddings.
-        """
-
-        image_features = self.model.encode_image(
-            images
-        )
-
-        if normalize:
-            image_features = F.normalize(
-                image_features,
-                dim=-1,
+    def encode_text(self, captions, normalize=True):
+        """提取全局文本特征，支持原始字符串或已 tokenized Tensor。"""
+        if isinstance(captions, (list, tuple)):
+            device = next(self.model.parameters()).device
+            tokens = self.tokenize(captions, device=device)
+        elif torch.is_tensor(captions):
+            tokens = captions
+        else:
+            raise TypeError(
+                "captions must be list[str], tuple[str], or torch.Tensor"
             )
 
-        return image_features
+        features = self.model.encode_text(tokens)
+        return F.normalize(features, dim=-1) if normalize else features
 
-    def encode_image_with_patches(
-        self,
-        images,
-        normalize=True,
-    ):
+    def encode_image_with_patches(self, images, normalize=True):
         """
-        Encode images once and return both:
+        一次 Vision 前向，同时返回全局特征和最终层 Patch 特征。
 
-            global image features:
-                [B, D]
+        ViT-B/32 + 224×224 时：
+            image_features: [B, 512]
+            patch_features: [B, 49, 512]
 
-            spatial patch features:
-                [B, N_patch, D]
-
-        For ViT-B/32 with 224x224 input:
-            N_patch = 7 * 7 = 49
-            D = 512
-
-        The final Transformer block is taken through
-        OpenCLIP's forward_intermediates() interface.
-
-        Intermediate patch tokens are normalized by the
-        visual tower's final LayerNorm, then explicitly
-        projected through visual.proj into the CLIP joint
-        embedding space.
+        Patch token 会经过 visual.proj，映射到 CLIP joint space，
+        便于后续和文本 / Entity 特征直接比较。
         """
-
         visual = self.model.visual
 
-        if not hasattr(
-            visual,
-            "forward_intermediates",
-        ):
+        if not hasattr(visual, "forward_intermediates"):
             raise RuntimeError(
                 "Current visual encoder does not expose "
                 "forward_intermediates()."
@@ -323,216 +222,38 @@ class CLIPBackbone(nn.Module):
             output_extra_tokens=False,
         )
 
-        if "image_features" not in outputs:
-            raise RuntimeError(
-                "forward_intermediates() did not return "
-                "'image_features'."
-            )
-
-        intermediates = outputs.get(
-            "image_intermediates"
-        )
-
-        if (
-            not isinstance(intermediates, list)
-            or len(intermediates) == 0
-        ):
-            raise RuntimeError(
-                "forward_intermediates() did not return "
-                "a valid image_intermediates list."
-            )
-
-        image_features = outputs[
-            "image_features"
-        ]
-
-        patch_features = intermediates[-1]
-
-        if patch_features.ndim != 3:
-            raise RuntimeError(
-                "Expected patch features in NLC format "
-                "[B, N_patch, width], got "
-                f"{tuple(patch_features.shape)}"
-            )
-
-        # --------------------------------------------------
-        # Project patch tokens from visual width
-        # (e.g. 768) into CLIP joint embedding dimension
-        # (e.g. 512), matching global text/entity features.
-        # --------------------------------------------------
-
-        visual_proj = getattr(
-            visual,
-            "proj",
-            None,
-        )
-
-        if visual_proj is not None:
-            patch_features = (
-                patch_features
-                @ visual_proj
-            )
-
-        if normalize:
-            image_features = F.normalize(
-                image_features,
-                dim=-1,
-            )
-
-            patch_features = F.normalize(
-                patch_features,
-                dim=-1,
-            )
-
-        return (
-            image_features,
-            patch_features,
-        )
-
-    def encode_image_intermediate_patches(
-        self,
-        images,
-        layers=(6, 8, 10, 12),
-        normalize=True,
-    ):
-        """
-        一次 Vision Transformer 前向，同时返回多层 Patch 特征。
-
-        Args:
-            images:
-                [B, C, H, W]
-
-            layers:
-                1-based Transformer layer numbers.
-                ViT-B/32 共 12 层，默认取第 6/8/10/12 层。
-
-            normalize:
-                是否对最终全局特征和各层 Patch 特征做 L2 Normalize。
-
-        Returns:
-            image_features:
-                [B, D]
-
-            patch_features:
-                dict[int, Tensor]
-                例如：
-                    {
-                        6:  [B, 49, 512],
-                        8:  [B, 49, 512],
-                        10: [B, 49, 512],
-                        12: [B, 49, 512],
-                    }
-
-        Notes:
-            1. OpenCLIP 内部 block index 为 0-based，因此 layer 6 对应 index 5。
-            2. 中间层 token 先经过 visual.ln_post，再通过 visual.proj
-               映射到 CLIP joint embedding space。
-            3. 该接口仅用于 Local/Patch 诊断，不改变现有
-               encode_image_with_patches() 的行为。
-        """
-        visual = self.model.visual
-
-        if not hasattr(visual, "forward_intermediates"):
-            raise RuntimeError(
-                "Current visual encoder does not expose "
-                "forward_intermediates()."
-            )
-
-        if not isinstance(layers, (list, tuple)):
-            raise TypeError("layers must be a list or tuple of integers.")
-        if len(layers) == 0:
-            raise ValueError("layers must not be empty.")
-        if any(not isinstance(layer, int) for layer in layers):
-            raise TypeError("Every layer number must be an integer.")
-        if len(set(layers)) != len(layers):
-            raise ValueError(
-                f"Duplicate layer numbers are not allowed: {layers}"
-            )
-
-        transformer = getattr(visual, "transformer", None)
-        resblocks = getattr(transformer, "resblocks", None)
-        if resblocks is None:
-            raise RuntimeError(
-                "Current visual encoder does not expose transformer.resblocks."
-            )
-
-        num_layers = len(resblocks)
-        invalid_layers = [
-            layer for layer in layers
-            if layer < 1 or layer > num_layers
-        ]
-        if invalid_layers:
-            raise ValueError(
-                f"Invalid visual Transformer layers {invalid_layers}; "
-                f"valid range is [1, {num_layers}]."
-            )
-
-        # 用户接口采用 1-based layer number；
-        # OpenCLIP forward_intermediates 使用 0-based block index。
-        indices = [layer - 1 for layer in layers]
-
-        outputs = visual.forward_intermediates(
-            images,
-            indices=indices,
-            stop_early=False,
-            normalize_intermediates=True,
-            intermediates_only=False,
-            output_fmt="NLC",
-            output_extra_tokens=False,
-        )
-
         image_features = outputs.get("image_features")
         intermediates = outputs.get("image_intermediates")
 
         if image_features is None:
             raise RuntimeError(
-                "forward_intermediates() did not return 'image_features'."
+                "forward_intermediates() did not return image_features."
+            )
+        if not isinstance(intermediates, list) or not intermediates:
+            raise RuntimeError(
+                "forward_intermediates() did not return image_intermediates."
             )
 
-        if (
-            not isinstance(intermediates, list)
-            or len(intermediates) != len(layers)
-        ):
-            actual = 0 if intermediates is None else len(intermediates)
+        patch_features = intermediates[-1]
+        if patch_features.ndim != 3:
             raise RuntimeError(
-                "Unexpected number of image intermediates: "
-                f"expected {len(layers)}, got {actual}."
+                "Expected patch features [B, N_patch, width], got "
+                f"{tuple(patch_features.shape)}."
             )
 
         visual_proj = getattr(visual, "proj", None)
-        patch_features = {}
-
-        for layer, features in zip(layers, intermediates):
-            if features.ndim != 3:
-                raise RuntimeError(
-                    f"Layer {layer}: expected NLC Patch features "
-                    f"[B, N_patch, width], got {tuple(features.shape)}."
-                )
-
-            # 中间层 token 已通过 visual.ln_post；
-            # 再映射到与 CLIP global/text 相同的 joint space。
-            if visual_proj is not None:
-                features = features @ visual_proj
-
-            if normalize:
-                features = F.normalize(
-                    features,
-                    dim=-1,
-                )
-
-            patch_features[layer] = features
+        if visual_proj is not None:
+            patch_features = patch_features @ visual_proj
 
         if normalize:
-            image_features = F.normalize(
-                image_features,
-                dim=-1,
-            )
+            image_features = F.normalize(image_features, dim=-1)
+            patch_features = F.normalize(patch_features, dim=-1)
 
         return image_features, patch_features
 
     def encode_text_with_tokens(self, captions, normalize=True):
         """
-        Caption 只经过一次 Text Transformer，同时返回全局文本特征和 token 特征。
+        一次 Text Transformer 前向，同时返回全局文本特征和最终层 token 特征。
 
         Returns:
             text_features:  [B, D]
@@ -540,9 +261,9 @@ class CLIPBackbone(nn.Module):
         """
         if isinstance(captions, (list, tuple)):
             device = next(self.model.parameters()).device
-            text_tokens = self.tokenize(captions, device=device)
+            tokens = self.tokenize(captions, device=device)
         elif torch.is_tensor(captions):
-            text_tokens = captions
+            tokens = captions
         else:
             raise TypeError(
                 "captions must be list[str], tuple[str], or torch.Tensor"
@@ -550,11 +271,12 @@ class CLIPBackbone(nn.Module):
 
         if not hasattr(self.model, "forward_intermediates"):
             raise RuntimeError(
-                "Current OpenCLIP model does not expose forward_intermediates()."
+                "Current OpenCLIP model does not expose "
+                "forward_intermediates()."
             )
 
         outputs = self.model.forward_intermediates(
-            text=text_tokens,
+            text=tokens,
             text_indices=1,
             normalize=normalize,
             normalize_intermediates=True,
@@ -565,13 +287,15 @@ class CLIPBackbone(nn.Module):
         intermediates = outputs.get("text_intermediates")
 
         if text_features is None:
-            raise RuntimeError("forward_intermediates() did not return text_features.")
+            raise RuntimeError(
+                "forward_intermediates() did not return text_features."
+            )
         if not isinstance(intermediates, list) or not intermediates:
             raise RuntimeError(
                 "forward_intermediates() did not return text_intermediates."
             )
 
-        # 最后一层 token 已经过 ln_final，再使用 CLIP 原文本投影映射到联合空间。
+        # 最终 token 通过原 CLIP text_projection 进入 joint space。
         token_features = intermediates[-1]
         text_projection = getattr(self.model, "text_projection", None)
 
@@ -586,58 +310,7 @@ class CLIPBackbone(nn.Module):
 
         return text_features, token_features
 
-    def encode_text(
-        self,
-        captions,
-        normalize=True,
-    ):
-        """
-        Encode raw captions or already-tokenized text.
-
-        captions can be:
-            list[str]
-            tuple[str]
-            Tensor
-        """
-
-        if isinstance(
-            captions,
-            (list, tuple)
-        ):
-            device = next(
-                self.model.parameters()
-            ).device
-
-            text_tokens = self.tokenize(
-                captions,
-                device=device,
-            )
-
-        elif torch.is_tensor(captions):
-            text_tokens = captions
-
-        else:
-            raise TypeError(
-                "captions must be list[str], "
-                "tuple[str], or torch.Tensor"
-            )
-
-        text_features = self.model.encode_text(
-            text_tokens
-        )
-
-        if normalize:
-            text_features = F.normalize(
-                text_features,
-                dim=-1,
-            )
-
-        return text_features
-
     @property
     def logit_scale(self):
-        """
-        CLIP learnable similarity scale.
-        """
-
+        """CLIP 可学习的相似度缩放系数。"""
         return self.model.logit_scale.exp()

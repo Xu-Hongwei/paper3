@@ -49,6 +49,8 @@ def create_dataset(
         image_root=config["image_root"],
         max_words=max_words,
         entity_index_file=config.get("entity_index_file"),
+        category_class_dir=config.get("category_class_dir"),
+        category_map_file=config.get("category_map_file"),
     )
 
     val_dataset = re_eval_dataset(
@@ -69,7 +71,7 @@ def create_loader(
     pin_memory=True,
 ):
     """
-    训练 batch 保留 category_id 与 Entity spans；
+    训练 batch 保留 category_id、sample_index 与 Entity spans；
     验证 / 测试使用默认 PyTorch collation。
     """
     return DataLoader(

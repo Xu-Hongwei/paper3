@@ -144,16 +144,173 @@ def main():
     category_t2i_weight = float(category_cfg.get("t2i_weight", 0.0))
     category_i2t_weight = float(category_cfg.get("i2t_weight", 0.0))
 
+    legacy_reliable_t2i = bool(
+        category_cfg.get("reliable_t2i", False)
+    )
+    reliability_mode = category_cfg.get("reliability_mode")
+    if reliability_mode is None:
+        reliability_mode = (
+            "post_gate"
+            if legacy_reliable_t2i
+            else "none"
+        )
+    reliability_mode = str(reliability_mode).lower()
+
+    valid_reliability_modes = {
+        "none",
+        "post_gate",
+        "reliable_mining",
+    }
+    if reliability_mode not in valid_reliability_modes:
+        raise ValueError(
+            "category_margin.reliability_mode 必须为 "
+            "none / post_gate / reliable_mining，"
+            f"当前为 {reliability_mode!r}。"
+        )
+
+    if (
+        legacy_reliable_t2i
+        and reliability_mode == "none"
+    ):
+        raise ValueError(
+            "reliable_t2i=True 与 reliability_mode=none 冲突。"
+        )
+
+    reliable_t2i = reliability_mode != "none"
+
+    support_threshold = float(
+        category_cfg.get("support_threshold", 0.0)
+    )
+    category_threshold = float(
+        category_cfg.get("category_threshold", 0.0)
+    )
+    support_cache_path = category_cfg.get("support_cache")
+
     if category_margin < 0:
         raise ValueError("category_margin.margin 必须 >= 0。")
     if category_t2i_weight < 0 or category_i2t_weight < 0:
         raise ValueError("category margin 权重必须 >= 0。")
+    if reliable_t2i and not category_enabled:
+        raise ValueError(
+            "reliability_mode!=none 时必须启用 category_margin.enabled。"
+        )
+    if reliable_t2i and category_t2i_weight <= 0:
+        raise ValueError(
+            "reliability_mode!=none 时 category_margin.t2i_weight 必须 > 0。"
+        )
+    if reliable_t2i and not support_cache_path:
+        raise ValueError(
+            "reliability_mode!=none 时必须提供 category_margin.support_cache。"
+        )
 
     category_criterion = (
-        CrossCategoryMarginLoss(margin=category_margin)
+        CrossCategoryMarginLoss(
+            margin=category_margin,
+            reliable_t2i=reliable_t2i,
+            support_threshold=support_threshold,
+            category_threshold=category_threshold,
+            reliability_mode=reliability_mode,
+        )
         if category_enabled
         else None
     )
+
+    # Frozen teacher support cache 只加载一次，整个训练过程保持不变。
+    category_support_cache = None
+    if reliable_t2i:
+        support_cache_path = Path(support_cache_path)
+        if not support_cache_path.is_file():
+            raise FileNotFoundError(
+                f"Category support cache not found: {support_cache_path}"
+            )
+
+        category_support_cache = torch.load(
+            support_cache_path,
+            map_location="cpu",
+            weights_only=True,
+        )
+
+        if not isinstance(category_support_cache, dict):
+            raise TypeError("category support cache 必须是 dict。")
+
+        required_cache_keys = {
+            "caption_support",
+            "image_support",
+        }
+        missing_cache_keys = sorted(
+            required_cache_keys - set(category_support_cache)
+        )
+        if missing_cache_keys:
+            raise ValueError(
+                f"Category support cache missing keys: "
+                f"{missing_cache_keys}"
+            )
+
+        caption_support = category_support_cache["caption_support"]
+        image_support = category_support_cache["image_support"]
+
+        if caption_support.ndim != 2:
+            raise ValueError(
+                "caption_support must have shape [N_pair, C]."
+            )
+        if image_support.ndim != 2:
+            raise ValueError(
+                "image_support must have shape [N_image, C]."
+            )
+        if caption_support.shape[0] != len(train_dataset):
+            raise ValueError(
+                "caption support / train dataset length mismatch: "
+                f"{caption_support.shape[0]} vs {len(train_dataset)}"
+            )
+        if image_support.shape[0] != train_dataset.num_images:
+            raise ValueError(
+                "image support / train image count mismatch: "
+                f"{image_support.shape[0]} vs {train_dataset.num_images}"
+            )
+        if caption_support.shape[1] != image_support.shape[1]:
+            raise ValueError(
+                "caption/image support category dimension mismatch."
+            )
+
+        # cache 中若保存了索引，训练前先做一次全量对齐检查。
+        if "sample_image_ids" in category_support_cache:
+            cached = category_support_cache[
+                "sample_image_ids"
+            ].long().cpu()
+            current = torch.tensor(
+                train_dataset.image_ids,
+                dtype=torch.long,
+            )
+            if not torch.equal(cached, current):
+                raise RuntimeError(
+                    "Support cache sample_image_ids 与当前训练集不一致。"
+                )
+
+        if "sample_category_ids" in category_support_cache:
+            cached = category_support_cache[
+                "sample_category_ids"
+            ].long().cpu()
+            current = torch.tensor(
+                train_dataset.category_ids,
+                dtype=torch.long,
+            )
+            if not torch.equal(cached, current):
+                raise RuntimeError(
+                    "Support cache sample_category_ids 与当前训练集不一致。"
+                )
+
+        if "image_category_ids" in category_support_cache:
+            cached = category_support_cache[
+                "image_category_ids"
+            ].long().cpu()
+            current = torch.tensor(
+                train_dataset.image_category_ids,
+                dtype=torch.long,
+            )
+            if not torch.equal(cached, current):
+                raise RuntimeError(
+                    "Support cache image_category_ids 与当前训练集不一致。"
+                )
 
     optimizer = build_optimizer(
         model,
@@ -188,7 +345,24 @@ def main():
     print(f"Eval every      : {eval_every} epoch(s)")
     print(f"Max train steps : {max_steps if max_steps is not None else 'full epoch'}")
     print(f"Log interval    : {log_interval}")
-    print("Objective       : Multi-positive CLIP loss")
+    if reliability_mode == "reliable_mining":
+        print(
+            "Objective       : Multi-positive CLIP + "
+            "Reliability-Guided T2I Hard-Negative Mining"
+        )
+    elif reliability_mode == "post_gate":
+        print(
+            "Objective       : Multi-positive CLIP + "
+            "Post-Gate Reliable T2I Cross-Category Margin"
+        )
+    elif category_enabled:
+        print(
+            "Objective       : Multi-positive CLIP + "
+            "Fixed Cross-Category Margin"
+        )
+    else:
+        print("Objective       : Multi-positive CLIP loss")
+
     print(
         "Category margin : "
         f"{'enabled' if category_enabled else 'disabled'}"
@@ -197,6 +371,18 @@ def main():
         print(f"Category m      : {category_margin:.4f}")
         print(f"Category T2I λ  : {category_t2i_weight:.4f}")
         print(f"Category I2T λ  : {category_i2t_weight:.4f}")
+        print(f"Reliability mode: {reliability_mode}")
+
+        if reliable_t2i:
+            print(f"Support thresh : {support_threshold:+.4f}")
+            print(f"Category thresh: {category_threshold:+.4f}")
+            print(f"Support cache  : {support_cache_path}")
+            print(
+                "Support shape  : "
+                f"{tuple(category_support_cache['caption_support'].shape)} / "
+                f"{tuple(category_support_cache['image_support'].shape)}"
+            )
+
     print("Best criterion  : maximum Validation mR")
 
     # --------------------------------------------------
@@ -232,6 +418,7 @@ def main():
             category_criterion=category_criterion,
             category_t2i_weight=category_t2i_weight,
             category_i2t_weight=category_i2t_weight,
+            category_support_cache=category_support_cache,
         )
 
         train_seconds = (datetime.now() - epoch_start).total_seconds()
@@ -247,12 +434,77 @@ def main():
         if category_enabled:
             print(f"Cat T2I loss : {train_stats['cat_loss_t2i']:.6f}")
             print(f"Cat I2T loss : {train_stats['cat_loss_i2t']:.6f}")
-            print(
-                f"Cat T2I act. : "
-                f"{train_stats['cat_t2i_active']}/"
-                f"{train_stats['cat_t2i_valid']} "
-                f"({train_stats['cat_t2i_active_ratio']:.2%})"
-            )
+
+            if reliable_t2i:
+                if reliability_mode == "reliable_mining":
+                    print(
+                        f"Cat T2I mine : "
+                        f"{train_stats['cat_t2i_reliable']}/"
+                        f"{train_stats['cat_t2i_valid']} "
+                        f"({train_stats['cat_t2i_reliable_ratio']:.2%})"
+                    )
+                    print(
+                        f"Cat T2I relN : "
+                        f"avg={train_stats['cat_t2i_avg_reliable_negatives']:.2f} "
+                        f"| none={train_stats['cat_t2i_no_reliable']}/"
+                        f"{train_stats['cat_t2i_valid']} "
+                        f"({train_stats['cat_t2i_no_reliable_ratio']:.2%})"
+                    )
+                    print(
+                        f"Cat T2I repl : "
+                        f"{train_stats['cat_t2i_replacement']}/"
+                        f"{train_stats['cat_t2i_valid']} "
+                        f"({train_stats['cat_t2i_replacement_ratio']:.2%})"
+                    )
+                    print(
+                        f"Cat T2I neg  : "
+                        f"fixed={train_stats['cat_t2i_fixed_hard_neg_sim']:.4f}, "
+                        f"reliable={train_stats['cat_t2i_hard_neg_sim']:.4f}"
+                    )
+                else:
+                    print(
+                        f"Cat T2I rel. : "
+                        f"{train_stats['cat_t2i_reliable']}/"
+                        f"{train_stats['cat_t2i_valid']} "
+                        f"({train_stats['cat_t2i_reliable_ratio']:.2%})"
+                    )
+
+                print(
+                    f"Cat T2I pre  : "
+                    f"{train_stats['cat_t2i_active_before_gate']}/"
+                    f"{train_stats['cat_t2i_valid']} "
+                    f"({train_stats['cat_t2i_active_before_gate_ratio']:.2%})"
+                )
+                print(
+                    f"Cat T2I post : "
+                    f"{train_stats['cat_t2i_active']}/"
+                    f"{train_stats['cat_t2i_reliable']} "
+                    f"({train_stats['cat_t2i_active_reliable_ratio']:.2%})"
+                )
+                print(
+                    "Cat T2I fixed A/B/C/D: "
+                    f"{train_stats['cat_t2i_region_a']}/"
+                    f"{train_stats['cat_t2i_region_b']}/"
+                    f"{train_stats['cat_t2i_region_c']}/"
+                    f"{train_stats['cat_t2i_region_d']} | "
+                    f"{train_stats['cat_t2i_region_a_ratio']:.2%}/"
+                    f"{train_stats['cat_t2i_region_b_ratio']:.2%}/"
+                    f"{train_stats['cat_t2i_region_c_ratio']:.2%}/"
+                    f"{train_stats['cat_t2i_region_d_ratio']:.2%}"
+                )
+                print(
+                    f"Cat T2I G    : "
+                    f"Gsup={train_stats['cat_t2i_g_sup']:+.4f}, "
+                    f"Gcat={train_stats['cat_t2i_g_cat']:+.4f}"
+                )
+            else:
+                print(
+                    f"Cat T2I act. : "
+                    f"{train_stats['cat_t2i_active']}/"
+                    f"{train_stats['cat_t2i_valid']} "
+                    f"({train_stats['cat_t2i_active_ratio']:.2%})"
+                )
+
             print(
                 f"Cat I2T act. : "
                 f"{train_stats['cat_i2t_active']}/"
@@ -291,6 +543,75 @@ def main():
             ),
             "train_cat_i2t_active_ratio": float(
                 train_stats["cat_i2t_active_ratio"]
+            ),
+            "train_cat_t2i_reliable": int(
+                train_stats["cat_t2i_reliable"]
+            ),
+            "train_cat_t2i_reliable_ratio": float(
+                train_stats["cat_t2i_reliable_ratio"]
+            ),
+            "train_cat_t2i_active_before_gate": int(
+                train_stats["cat_t2i_active_before_gate"]
+            ),
+            "train_cat_t2i_active_before_gate_ratio": float(
+                train_stats["cat_t2i_active_before_gate_ratio"]
+            ),
+            "train_cat_t2i_active_reliable_ratio": float(
+                train_stats["cat_t2i_active_reliable_ratio"]
+            ),
+            "train_cat_t2i_region_a": int(
+                train_stats["cat_t2i_region_a"]
+            ),
+            "train_cat_t2i_region_b": int(
+                train_stats["cat_t2i_region_b"]
+            ),
+            "train_cat_t2i_region_c": int(
+                train_stats["cat_t2i_region_c"]
+            ),
+            "train_cat_t2i_region_d": int(
+                train_stats["cat_t2i_region_d"]
+            ),
+            "train_cat_t2i_region_a_ratio": float(
+                train_stats["cat_t2i_region_a_ratio"]
+            ),
+            "train_cat_t2i_region_b_ratio": float(
+                train_stats["cat_t2i_region_b_ratio"]
+            ),
+            "train_cat_t2i_region_c_ratio": float(
+                train_stats["cat_t2i_region_c_ratio"]
+            ),
+            "train_cat_t2i_region_d_ratio": float(
+                train_stats["cat_t2i_region_d_ratio"]
+            ),
+            "train_cat_t2i_g_sup": float(
+                train_stats["cat_t2i_g_sup"]
+            ),
+            "train_cat_t2i_g_cat": float(
+                train_stats["cat_t2i_g_cat"]
+            ),
+            "train_cat_t2i_reliability_mode": train_stats[
+                "cat_t2i_reliability_mode"
+            ],
+            "train_cat_t2i_reliable_candidate_total": int(
+                train_stats["cat_t2i_reliable_candidate_total"]
+            ),
+            "train_cat_t2i_avg_reliable_negatives": float(
+                train_stats["cat_t2i_avg_reliable_negatives"]
+            ),
+            "train_cat_t2i_no_reliable": int(
+                train_stats["cat_t2i_no_reliable"]
+            ),
+            "train_cat_t2i_no_reliable_ratio": float(
+                train_stats["cat_t2i_no_reliable_ratio"]
+            ),
+            "train_cat_t2i_replacement": int(
+                train_stats["cat_t2i_replacement"]
+            ),
+            "train_cat_t2i_replacement_ratio": float(
+                train_stats["cat_t2i_replacement_ratio"]
+            ),
+            "train_cat_t2i_fixed_hard_neg_sim": float(
+                train_stats["cat_t2i_fixed_hard_neg_sim"]
             ),
             "train_cat_t2i_pos_sim": float(train_stats["cat_t2i_pos_sim"]),
             "train_cat_i2t_pos_sim": float(train_stats["cat_i2t_pos_sim"]),
@@ -380,6 +701,45 @@ def main():
             ),
             "train_cat_i2t_active_ratio": float(
                 train_stats["cat_i2t_active_ratio"]
+            ),
+            "train_cat_t2i_reliable_ratio": float(
+                train_stats["cat_t2i_reliable_ratio"]
+            ),
+            "train_cat_t2i_active_before_gate_ratio": float(
+                train_stats["cat_t2i_active_before_gate_ratio"]
+            ),
+            "train_cat_t2i_active_reliable_ratio": float(
+                train_stats["cat_t2i_active_reliable_ratio"]
+            ),
+            "train_cat_t2i_region_a_ratio": float(
+                train_stats["cat_t2i_region_a_ratio"]
+            ),
+            "train_cat_t2i_region_b_ratio": float(
+                train_stats["cat_t2i_region_b_ratio"]
+            ),
+            "train_cat_t2i_region_c_ratio": float(
+                train_stats["cat_t2i_region_c_ratio"]
+            ),
+            "train_cat_t2i_region_d_ratio": float(
+                train_stats["cat_t2i_region_d_ratio"]
+            ),
+            "train_cat_t2i_reliability_mode": train_stats[
+                "cat_t2i_reliability_mode"
+            ],
+            "train_cat_t2i_avg_reliable_negatives": float(
+                train_stats["cat_t2i_avg_reliable_negatives"]
+            ),
+            "train_cat_t2i_no_reliable_ratio": float(
+                train_stats["cat_t2i_no_reliable_ratio"]
+            ),
+            "train_cat_t2i_replacement_ratio": float(
+                train_stats["cat_t2i_replacement_ratio"]
+            ),
+            "train_cat_t2i_fixed_hard_neg_sim": float(
+                train_stats["cat_t2i_fixed_hard_neg_sim"]
+            ),
+            "train_cat_t2i_reliable_hard_neg_sim": float(
+                train_stats["cat_t2i_hard_neg_sim"]
             ),
         }
         if metrics is not None:

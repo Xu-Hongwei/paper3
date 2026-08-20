@@ -32,6 +32,7 @@ RSICD_CLASSES = [
     "park",
     "parking",
     "playground",
+    "playfields",
     "pond",
     "port",
     "railwaystation",
@@ -63,12 +64,124 @@ def resolve_image_path(image_root, image_reference):
     )
 
 
-def get_rsicd_category_id(image_reference):
+def _normalize_filename(image_reference):
+    """统一为小写 basename，兼容 split/xxx.jpg 与 xxx.jpg。"""
+    return os.path.basename(
+        str(image_reference).replace("\\", "/")
+    ).lower()
+
+
+def load_rsicd_category_mapping(
+    category_class_dir=None,
+    category_map_file=None,
+):
     """
-    从 RSICD 文件名恢复 30 类场景标签。
-    纯数字文件名或无法解析的文件名返回 -1。
+    读取 filename -> category_name 映射。
+
+    推荐 Reliable Category 实验使用 released txtclasses_rsicd：
+        category_class_dir=.../txtclasses_rsicd
+
+    category_map_file 支持：
+        1. {"airport_1.jpg": "airport", ...}
+        2. {"mapping": {...}}
+
+    两者都未提供时返回 None，并回退到旧文件名解析，
+    以保证旧 baseline 配置仍可加载。
     """
-    stem = os.path.splitext(os.path.basename(str(image_reference)))[0].lower()
+    if category_class_dir and category_map_file:
+        raise ValueError(
+            "category_class_dir 和 category_map_file 只能提供一个。"
+        )
+
+    if category_class_dir is None and category_map_file is None:
+        return None
+
+    mapping = {}
+
+    if category_class_dir is not None:
+        if not os.path.isdir(category_class_dir):
+            raise FileNotFoundError(
+                f"category_class_dir not found: {category_class_dir}"
+            )
+
+        txt_files = sorted(
+            file_name
+            for file_name in os.listdir(category_class_dir)
+            if file_name.lower().endswith(".txt")
+        )
+        if not txt_files:
+            raise FileNotFoundError(
+                f"No class txt files found in: {category_class_dir}"
+            )
+
+        for file_name in txt_files:
+            category_name = os.path.splitext(file_name)[0].strip().lower()
+            if category_name not in RSICD_CLASS_TO_ID:
+                raise ValueError(
+                    f"Unexpected RSICD class file: {file_name}; "
+                    f"known classes={RSICD_CLASSES}"
+                )
+
+            file_path = os.path.join(category_class_dir, file_name)
+            with open(file_path, "r", encoding="utf-8-sig") as f:
+                for line in f:
+                    image_name = line.strip()
+                    if not image_name:
+                        continue
+
+                    key = _normalize_filename(image_name)
+                    old = mapping.get(key)
+                    if old is not None and old != category_name:
+                        raise ValueError(
+                            f"Duplicate class mapping: "
+                            f"{key}: {old} vs {category_name}"
+                        )
+                    mapping[key] = category_name
+
+    else:
+        with open(category_map_file, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+
+        if isinstance(raw, dict) and "mapping" in raw:
+            raw = raw["mapping"]
+
+        if not isinstance(raw, dict):
+            raise ValueError(
+                "category_map_file 必须是 filename -> category_name 字典。"
+            )
+
+        for image_name, category_name in raw.items():
+            category_name = str(category_name).strip().lower()
+            if category_name not in RSICD_CLASS_TO_ID:
+                raise ValueError(
+                    f"Unknown RSICD category: {category_name}"
+                )
+            mapping[_normalize_filename(image_name)] = category_name
+
+    if not mapping:
+        raise ValueError("RSICD category mapping is empty.")
+
+    return mapping
+
+
+def get_rsicd_category_id(image_reference, category_mapping=None):
+    """
+    优先使用 official filename->class mapping。
+
+    若未提供 mapping，则保留旧文件名前缀解析作为兼容模式；
+    此时纯数字文件名仍会得到 -1。
+    """
+    if category_mapping is not None:
+        category_name = category_mapping.get(
+            _normalize_filename(image_reference)
+        )
+        if category_name is None:
+            return -1
+        return RSICD_CLASS_TO_ID[category_name]
+
+    stem = os.path.splitext(
+        os.path.basename(str(image_reference))
+    )[0].lower()
 
     if stem.isdigit():
         return -1
@@ -89,12 +202,20 @@ def get_rsicd_category_name(category_id):
 
 def re_train_collate_fn(batch):
     """合并训练 batch，并压紧变长 Entity spans。"""
-    images, captions, image_ids, category_ids, spans = zip(*batch)
+    (
+        images,
+        captions,
+        image_ids,
+        category_ids,
+        sample_indices,
+        spans,
+    ) = zip(*batch)
 
     images = torch.stack(images, dim=0)
     captions = list(captions)
     image_ids = torch.tensor(image_ids, dtype=torch.long)
     category_ids = torch.tensor(category_ids, dtype=torch.long)
+    sample_indices = torch.tensor(sample_indices, dtype=torch.long)
 
     entity_counts = torch.tensor(
         [item.shape[0] for item in spans],
@@ -116,6 +237,7 @@ def re_train_collate_fn(batch):
         captions,
         image_ids,
         category_ids,
+        sample_indices,
         entity_spans,
         entity_sample_ids,
         entity_counts,
@@ -128,11 +250,11 @@ class re_train_dataset(Dataset):
 
     训练样本保留：
         1. image_id：同一图像的多 caption 共享；
-        2. category_id：RSICD 30 类为 0~29，纯数字文件名为 -1；
-        3. Entity spans：现有 Entity / contextual 分支继续使用。
+        2. category_id：Reliable Category 实验优先使用 released 31 类映射；
+        3. sample_index：用于查询离线 frozen support cache；
+        4. Entity spans：现有 Entity / contextual 分支继续使用。
 
-    category_id 直接由当前原始 pair 的 image 文件名恢复，不依赖去重后的
-    structured semantics label，避免重复 caption 跨图像时产生类别歧义。
+    未配置 official mapping 时保留旧文件名解析，便于旧 baseline 兼容。
     """
 
     def __init__(
@@ -142,12 +264,23 @@ class re_train_dataset(Dataset):
         image_root,
         max_words=30,
         entity_index_file=None,
+        category_class_dir=None,
+        category_map_file=None,
     ):
         super().__init__()
 
         self.transform = transform
         self.image_root = image_root
         self.max_words = max_words
+        self.category_mapping = load_rsicd_category_mapping(
+            category_class_dir=category_class_dir,
+            category_map_file=category_map_file,
+        )
+        self.category_source = (
+            "official_mapping"
+            if self.category_mapping is not None
+            else "legacy_filename"
+        )
 
         ann_files = [ann_file] if isinstance(ann_file, str) else ann_file
         raw_ann = []
@@ -190,7 +323,20 @@ class re_train_dataset(Dataset):
             item = dict(ann)
             item["caption"] = caption
             item["_pair_index"] = pair_index
-            item["_category_id"] = get_rsicd_category_id(ann["image"])
+            item["_category_id"] = get_rsicd_category_id(
+                ann["image"],
+                self.category_mapping,
+            )
+
+            if (
+                self.category_mapping is not None
+                and item["_category_id"] < 0
+            ):
+                raise KeyError(
+                    f"Official category mapping missing image: "
+                    f"{ann['image']}"
+                )
+
             self.ann.append(item)
 
         if not self.ann:
@@ -205,18 +351,20 @@ class re_train_dataset(Dataset):
         """为同一图像的多条 caption 分配相同 image_id。"""
         image_to_id = {}
         self.image_ids = []
+        self.image_references = []
 
-        for index, ann in enumerate(self.ann):
+        for ann in self.ann:
             image_key = ann["image"]
             if image_key not in image_to_id:
                 image_to_id[image_key] = len(image_to_id)
+                self.image_references.append(image_key)
 
             self.image_ids.append(image_to_id[image_key])
 
         self.num_images = len(image_to_id)
 
     def _build_category_stats(self):
-        """统计有效训练 pair / image 的类别覆盖率。"""
+        """统计类别覆盖，并构造与 image_id 对齐的 image_category_ids。"""
         self.category_ids = [
             int(ann["_category_id"])
             for ann in self.ann
@@ -230,20 +378,40 @@ class re_train_dataset(Dataset):
             len(self.category_ids) - self.num_known_category_pairs
         )
 
-        image_category = {}
-        for ann in self.ann:
-            image_category.setdefault(
-                ann["image"],
-                int(ann["_category_id"]),
-            )
+        self.image_category_ids = [-1] * self.num_images
+
+        for sample_index, image_id in enumerate(self.image_ids):
+            category_id = self.category_ids[sample_index]
+            old = self.image_category_ids[image_id]
+
+            if old >= 0 and category_id >= 0 and old != category_id:
+                raise RuntimeError(
+                    f"Same image has inconsistent categories: "
+                    f"image_id={image_id}, {old} vs {category_id}"
+                )
+
+            if old < 0:
+                self.image_category_ids[image_id] = category_id
 
         self.num_known_category_images = sum(
             category_id >= 0
-            for category_id in image_category.values()
+            for category_id in self.image_category_ids
         )
         self.num_unknown_category_images = (
-            len(image_category) - self.num_known_category_images
+            self.num_images - self.num_known_category_images
         )
+
+        if (
+            self.category_mapping is not None
+            and (
+                self.num_unknown_category_pairs > 0
+                or self.num_unknown_category_images > 0
+            )
+        ):
+            raise RuntimeError(
+                "Official category mapping enabled, but unresolved "
+                "training categories still exist."
+            )
 
     def _load_entity_index(self, entity_index_file):
         """读取 Entity span/text 索引；兼容旧 v1 span-only 格式。"""
@@ -414,6 +582,8 @@ class re_train_dataset(Dataset):
         print(f"Valid training pairs  : {len(self.ann)}")
         print(f"Filtered captions     : {self.num_filtered_pairs}")
         print(f"Unique training images: {self.num_images}")
+        print(f"Category source       : {self.category_source}")
+        print(f"Category groups       : {len(RSICD_CLASSES)}")
         print(
             f"Known category pairs  : "
             f"{self.num_known_category_pairs}"
@@ -473,6 +643,7 @@ class re_train_dataset(Dataset):
             ann["caption"],
             self.image_ids[index],
             self.category_ids[index],
+            index,
             self._get_entity_spans_by_pair(
                 ann["_pair_index"]
             ),

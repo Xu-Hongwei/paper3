@@ -1,0 +1,60 @@
+experiment:
+  name: clip_rsicd_catmargin_t2i_reliable_mining_10ep
+
+seed: 42
+
+dataset:
+  name: rsicd
+  image_root: E:/datasets/remote_sensing_captioning/RSICD/images
+  train_file: E:/paper3/data/rsicd/rsicd_train.json
+  val_file: E:/paper3/data/rsicd/rsicd_val.json
+  test_file: E:/paper3/data/rsicd/rsicd_test.json
+  category_class_dir: E:/datasets/remote_sensing_captioning/RSICD/txtclasses_rsicd
+  entity_index_file: E:/paper3/data/rsicd/entity_prototype/rsicd_entity_training_index_v2.pt
+
+model:
+  name: clip
+  backbone: ViT-B-32-quickgelu
+  pretrained: openai
+  image_res: 224
+  max_words: 30
+
+training:
+  epochs: 10
+  batch_size: 64
+  eval_batch_size: 128
+  text_batch_size: 256
+  num_workers: 8
+  eval_every: 1
+  log_interval: 50
+  max_steps: null
+
+optimizer:
+  name: adamw
+  lr: 1.0e-5
+  weight_decay: 0.01
+
+scheduler:
+  name: linear
+  warmup_ratio: 0.05
+
+category_margin:
+  enabled: true
+  margin: 0.10
+
+  # 只验证 T2I reliability-guided mining
+  t2i_weight: 0.10
+  i2t_weight: 0.0
+
+  # 三种可选模式：
+  # none            = Fixed Mining
+  # post_gate       = 先选 fixed hardest，再做可靠性 gate
+  # reliable_mining = 先过滤可靠候选，再在其中选择 hardest
+  reliability_mode: reliable_mining
+
+  support_threshold: 0.0
+  category_threshold: 0.0
+  support_cache: E:/paper3/data/rsicd/category_support/train_support_baseline.pt
+
+output:
+  root: E:/paper3/outputs

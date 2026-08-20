@@ -1,0 +1,47 @@
+# Fixed-T2I control
+# 目的：与 Reliable-T2I 严格对照。
+# 唯一核心区别应是是否启用 A-zone reliability gate。
+# L_total = L_CLIP + 0.10 * L_cat_T2I
+
+experiment:
+  name: clip_rsicd_catmargin_t2i_fixed_30ep
+seed: 42
+dataset:
+  name: RSICD
+  image_root: E:/datasets/remote_sensing_captioning/RSICD/images
+  train_file: E:/paper3/data/rsicd/rsicd_train.json
+  val_file: E:/paper3/data/rsicd/rsicd_val.json
+  test_file: E:/paper3/data/rsicd/rsicd_test.json
+  entity_index_file: E:/paper3/data/rsicd/entity_prototype/rsicd_entity_training_index_v2.pt
+  image_res: 224
+  max_words: 30
+  category_class_dir: E:/datasets/remote_sensing_captioning/RSICD/txtclasses_rsicd
+model:
+  backbone: ViT-B-32-quickgelu
+  pretrained: openai
+  pretrained_local_path: null
+  prefer_local_pretrained: true
+training:
+  epochs: 30
+  batch_size: 64
+  eval_batch_size: 128
+  text_batch_size: 256
+  num_workers: 8
+  eval_every: 1
+  log_interval: 50
+  max_steps: null
+  early_stop_patience: null
+  early_stop_min_delta: 0.0
+optimizer:
+  lr: 1.0e-05
+  weight_decay: 0.01
+scheduler:
+  warmup_ratio: 0.05
+category_margin:
+  enabled: true
+  margin: 0.1
+  t2i_weight: 0.1
+  i2t_weight: 0.0
+  reliable_t2i: false
+output:
+  root: E:/paper3/outputs

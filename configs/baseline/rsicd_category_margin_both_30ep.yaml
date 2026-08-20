@@ -1,0 +1,58 @@
+experiment:
+  name: clip_rsicd_catmargin_both_30ep
+
+seed: 42
+
+dataset:
+  name: RSICD
+  image_root: E:/datasets/remote_sensing_captioning/RSICD/images
+
+  train_file: E:/paper3/data/rsicd/rsicd_train.json
+  val_file: E:/paper3/data/rsicd/rsicd_val.json
+  test_file: E:/paper3/data/rsicd/rsicd_test.json
+
+  # 保留现有 Entity 数据链；当前 Pure Cross-Category Margin 阶段暂不使用 Entity 监督
+  entity_index_file: E:/paper3/data/rsicd/entity_prototype/rsicd_entity_training_index_v2.pt
+
+  image_res: 224
+  max_words: 30
+
+model:
+  backbone: ViT-B-32-quickgelu
+  pretrained: openai
+  pretrained_local_path: null
+  prefer_local_pretrained: true
+
+training:
+  epochs: 30
+  batch_size: 64
+  eval_batch_size: 128
+  text_batch_size: 256
+  num_workers: 8
+
+  eval_every: 1
+  log_interval: 50
+  max_steps: null
+
+  early_stop_patience: null
+  early_stop_min_delta: 0.0
+
+optimizer:
+  lr: 1.0e-5
+  weight_decay: 0.01
+
+scheduler:
+  warmup_ratio: 0.05
+
+# Pure Cross-Category Margin
+# L_total = L_CLIP
+#         + t2i_weight * L_cat_T2I
+#         + i2t_weight * L_cat_I2T
+category_margin:
+  enabled: true
+  margin: 0.10
+  t2i_weight: 0.10
+  i2t_weight: 0.10
+
+output:
+  root: E:/paper3/outputs

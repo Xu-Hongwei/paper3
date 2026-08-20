@@ -1,1 +1,2 @@
 from .clip_loss import CLIPLoss
+from .category_margin_loss import CrossCategoryMarginLoss

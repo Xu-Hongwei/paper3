@@ -7,7 +7,7 @@ import torch
 from datasets import create_dataset, create_loader
 from engine import build_optimizer, build_scheduler, train_one_epoch
 from evaluation import evaluate_retrieval
-from losses import CLIPLoss
+from losses import CLIPLoss, CrossCategoryMarginLoss
 from models import CLIPRetrieval
 from utils import (
     append_jsonl,
@@ -137,6 +137,24 @@ def main():
     # Loss / Optimizer / Scheduler
     # --------------------------------------------------
     criterion = CLIPLoss()
+
+    category_cfg = config.get("category_margin", {})
+    category_enabled = bool(category_cfg.get("enabled", False))
+    category_margin = float(category_cfg.get("margin", 0.10))
+    category_t2i_weight = float(category_cfg.get("t2i_weight", 0.0))
+    category_i2t_weight = float(category_cfg.get("i2t_weight", 0.0))
+
+    if category_margin < 0:
+        raise ValueError("category_margin.margin 必须 >= 0。")
+    if category_t2i_weight < 0 or category_i2t_weight < 0:
+        raise ValueError("category margin 权重必须 >= 0。")
+
+    category_criterion = (
+        CrossCategoryMarginLoss(margin=category_margin)
+        if category_enabled
+        else None
+    )
+
     optimizer = build_optimizer(
         model,
         lr=config["optimizer"]["lr"],
@@ -171,6 +189,14 @@ def main():
     print(f"Max train steps : {max_steps if max_steps is not None else 'full epoch'}")
     print(f"Log interval    : {log_interval}")
     print("Objective       : Multi-positive CLIP loss")
+    print(
+        "Category margin : "
+        f"{'enabled' if category_enabled else 'disabled'}"
+    )
+    if category_enabled:
+        print(f"Category m      : {category_margin:.4f}")
+        print(f"Category T2I λ  : {category_t2i_weight:.4f}")
+        print(f"Category I2T λ  : {category_i2t_weight:.4f}")
     print("Best criterion  : maximum Validation mR")
 
     # --------------------------------------------------
@@ -203,6 +229,9 @@ def main():
             epoch=epoch,
             max_steps=max_steps,
             log_interval=log_interval,
+            category_criterion=category_criterion,
+            category_t2i_weight=category_t2i_weight,
+            category_i2t_weight=category_i2t_weight,
         )
 
         train_seconds = (datetime.now() - epoch_start).total_seconds()
@@ -211,8 +240,36 @@ def main():
         print(f"EPOCH {epoch} TRAIN SUMMARY")
         print("-" * 70)
         print(f"Average loss : {train_stats['loss']:.6f}")
+        print(f"Average CLIP : {train_stats['clip_loss']:.6f}")
         print(f"Average I2T  : {train_stats['loss_i2t']:.6f}")
         print(f"Average T2I  : {train_stats['loss_t2i']:.6f}")
+
+        if category_enabled:
+            print(f"Cat T2I loss : {train_stats['cat_loss_t2i']:.6f}")
+            print(f"Cat I2T loss : {train_stats['cat_loss_i2t']:.6f}")
+            print(
+                f"Cat T2I act. : "
+                f"{train_stats['cat_t2i_active']}/"
+                f"{train_stats['cat_t2i_valid']} "
+                f"({train_stats['cat_t2i_active_ratio']:.2%})"
+            )
+            print(
+                f"Cat I2T act. : "
+                f"{train_stats['cat_i2t_active']}/"
+                f"{train_stats['cat_i2t_valid']} "
+                f"({train_stats['cat_i2t_active_ratio']:.2%})"
+            )
+            print(
+                f"Cat T2I sim  : "
+                f"pos={train_stats['cat_t2i_pos_sim']:.4f}, "
+                f"neg={train_stats['cat_t2i_hard_neg_sim']:.4f}"
+            )
+            print(
+                f"Cat I2T sim  : "
+                f"pos={train_stats['cat_i2t_pos_sim']:.4f}, "
+                f"neg={train_stats['cat_i2t_hard_neg_sim']:.4f}"
+            )
+
         print(f"Current LR   : {train_stats['lr']:.8f}")
         print(f"Logit scale  : {train_stats['logit_scale']:.4f}")
         print(f"Train time   : {train_seconds:.2f} s")
@@ -220,8 +277,29 @@ def main():
         epoch_record = {
             "epoch": epoch,
             "train_loss": float(train_stats["loss"]),
+            "train_clip_loss": float(train_stats["clip_loss"]),
             "train_loss_i2t": float(train_stats["loss_i2t"]),
             "train_loss_t2i": float(train_stats["loss_t2i"]),
+            "train_cat_loss_t2i": float(train_stats["cat_loss_t2i"]),
+            "train_cat_loss_i2t": float(train_stats["cat_loss_i2t"]),
+            "train_cat_t2i_valid": int(train_stats["cat_t2i_valid"]),
+            "train_cat_i2t_valid": int(train_stats["cat_i2t_valid"]),
+            "train_cat_t2i_active": int(train_stats["cat_t2i_active"]),
+            "train_cat_i2t_active": int(train_stats["cat_i2t_active"]),
+            "train_cat_t2i_active_ratio": float(
+                train_stats["cat_t2i_active_ratio"]
+            ),
+            "train_cat_i2t_active_ratio": float(
+                train_stats["cat_i2t_active_ratio"]
+            ),
+            "train_cat_t2i_pos_sim": float(train_stats["cat_t2i_pos_sim"]),
+            "train_cat_i2t_pos_sim": float(train_stats["cat_i2t_pos_sim"]),
+            "train_cat_t2i_hard_neg_sim": float(
+                train_stats["cat_t2i_hard_neg_sim"]
+            ),
+            "train_cat_i2t_hard_neg_sim": float(
+                train_stats["cat_i2t_hard_neg_sim"]
+            ),
             "lr": float(train_stats["lr"]),
             "logit_scale": float(train_stats["logit_scale"]),
             "train_seconds": train_seconds,
@@ -292,8 +370,17 @@ def main():
         # --------------------------------------------------
         checkpoint_metrics = {
             "train_loss": float(train_stats["loss"]),
+            "train_clip_loss": float(train_stats["clip_loss"]),
             "train_loss_i2t": float(train_stats["loss_i2t"]),
             "train_loss_t2i": float(train_stats["loss_t2i"]),
+            "train_cat_loss_t2i": float(train_stats["cat_loss_t2i"]),
+            "train_cat_loss_i2t": float(train_stats["cat_loss_i2t"]),
+            "train_cat_t2i_active_ratio": float(
+                train_stats["cat_t2i_active_ratio"]
+            ),
+            "train_cat_i2t_active_ratio": float(
+                train_stats["cat_i2t_active_ratio"]
+            ),
         }
         if metrics is not None:
             checkpoint_metrics.update(metrics)

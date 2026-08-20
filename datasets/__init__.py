@@ -1,6 +1,10 @@
 from torch.utils.data import DataLoader
 
-from .re_dataset import re_eval_dataset, re_train_collate_fn, re_train_dataset
+from .re_dataset import (
+    re_eval_dataset,
+    re_train_collate_fn,
+    re_train_dataset,
+)
 from .transforms import build_eval_transform, build_train_transform
 
 
@@ -22,7 +26,9 @@ def create_dataset(
 
     if evaluate:
         if eval_split not in {"val", "test"}:
-            raise ValueError(f"Unknown eval split: {eval_split}")
+            raise ValueError(
+                f"Unknown eval split: {eval_split}"
+            )
 
         ann_file = (
             config["val_file"]
@@ -63,7 +69,7 @@ def create_loader(
     pin_memory=True,
 ):
     """
-    训练 batch 保留 Entity spans；
+    训练 batch 保留 category_id 与 Entity spans；
     验证 / 测试使用默认 PyTorch collation。
     """
     return DataLoader(

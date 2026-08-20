@@ -1,0 +1,107 @@
+experiment:
+  # 单独使用新实验名，避免覆盖原来的 Clean CLIP smoke 输出
+  name: clip_rsicd_category_margin_smoke
+
+seed: 42
+
+dataset:
+  name: RSICD
+
+  image_root: E:/datasets/remote_sensing_captioning/RSICD/images
+
+  train_file: E:/paper3/data/rsicd/rsicd_train.json
+  val_file: E:/paper3/data/rsicd/rsicd_val.json
+  test_file: E:/paper3/data/rsicd/rsicd_test.json
+
+  # 保留已有 Entity 数据链。
+  # 当前 Pure Cross-Category Margin 阶段暂不使用 Entity 监督。
+  entity_index_file: E:/paper3/data/rsicd/entity_prototype/rsicd_entity_training_index_v2.pt
+
+  image_res: 224
+  max_words: 30
+
+
+model:
+  backbone: ViT-B-32-quickgelu
+  pretrained: openai
+
+  # 若本地没有额外指定 OpenCLIP 权重，保持 null
+  pretrained_local_path: null
+  prefer_local_pretrained: true
+
+
+training:
+  # --------------------------------------------------
+  # Smoke Test
+  # --------------------------------------------------
+  # 这里只验证：
+  # 1. category_id 数据链；
+  # 2. 双向 CrossCategoryMarginLoss；
+  # 3. total loss 是否正确；
+  # 4. backward / optimizer / validation 是否正常。
+  # --------------------------------------------------
+  epochs: 1
+
+  # Smoke 阶段可以小 batch。
+  # 正式 Category Margin 实验恢复为 64。
+  batch_size: 16
+
+  eval_batch_size: 64
+  text_batch_size: 128
+  num_workers: 4
+
+  # 每个 epoch 验证一次
+  eval_every: 1
+
+  # Smoke 每一步都打印
+  log_interval: 1
+
+  # 只训练 3 steps
+  max_steps: 3
+
+  early_stop_patience: null
+  early_stop_min_delta: 0.0
+
+
+optimizer:
+  # Smoke 阶段沿用当前配置即可。
+  # 正式实验与 baseline 公平比较时恢复对应 baseline LR。
+  lr: 5.0e-6
+  weight_decay: 0.01
+
+
+scheduler:
+  warmup_ratio: 0.05
+
+
+# ==================================================
+# Cross-Category Margin
+#
+# 总损失：
+#
+# L_total
+# = L_CLIP
+# + t2i_weight * L_cat_T2I
+# + i2t_weight * L_cat_I2T
+#
+# 当前第一版：
+# - 只根据 RSICD category_id 做跨类别 batch-hard mining；
+# - category_id=-1 的数字文件名样本不参与该辅助损失；
+# - 不使用 LLM Entity false-negative filtering；
+# - 不使用动态 margin。
+# ==================================================
+category_margin:
+  enabled: true
+
+  # 根据随机 batch gap 分布：
+  # m=0.05 仅约 2% triplet 激活；
+  # m=0.10 时 T2I 约 20%，I2T 约 26% 激活。
+  margin: 0.10
+
+  # 当前 smoke 直接验证双向 Both 版本
+  t2i_weight: 0.10
+  i2t_weight: 0.10
+
+
+output:
+  root: E:/paper3/outputs
